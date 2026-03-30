@@ -3,39 +3,43 @@
 #include <stdio.h>
 void yyerror(char *s);
 %}
+%union { int nb; char* name; }
 %token tINT
 %token tMAIN tPRINTF tCONST tERROR
-%token tNUMBER tNUMBEREXP tIDENTIFIER
-%token tEQUAL tPLUS tMINUS tTIMES tDIVIDE  
+%token <nb> tNUMBER
+%token <name> tIDENTIFIER
+%token tEQUAL tPLUS tMINUS tTIMES tDIVIDE 
 %token tLEFTPAREN tRIGHTPAREN tLEFTBRACE tRIGHTBRACE tSEMICOLON tCOMMA
+
+%type <nb> Expression
+
+%right tEQUAL
+%left tPLUS tMINUS
+%left tTIMES tDIVIDE
+
 %start Program
 %%
 
-Operator : tPLUS { printf("found plus operator"); }
-         | tMINUS { printf("found minus operator"); }
-         | tTIMES { printf("found times operator"); }
-         | tDIVIDE { printf("found divide operator"); };
+Operator : | tDIVIDE { printf("found divide operator\n"); }
+         | tTIMES { printf("found times operator\n"); }
+         | tMINUS { printf("found minus operator\n"); }
+         | tPLUS { printf("found plus operator\n"); };
 
-Number : tNUMBER { printf("found Number\n"); }
-       | tNUMBEREXP { printf("found Number in exponent form\n");  };
-
-Identifier : tIDENTIFIER { printf("found identifier"); };
-
-Expression : Expression Operator Expression { printf("found expr + expr"); }
-           | Number { printf("found number expression"); }
-           | tIDENTIFIER { printf("found identifier expression"); };
+Expression : Expression tPLUS Expression { printf("found expr + expr\n"); }
+           | tNUMBER { printf("found number expression\n"); }
+           | tIDENTIFIER { printf("found identifier expression\n"); };
 
 
-VarDeclaration : tCONST tINT Identifier tEQUAL Expression tSEMICOLON
-                { printf("found constant declaration"); }
-               | tINT Identifier tEQUAL Expression tSEMICOLON
-                { printf("found variable declaration"); };
+VarDeclaration : tCONST tINT tIDENTIFIER tEQUAL Expression tSEMICOLON
+                { printf("found constant declaration\n"); }
+               | tINT tIDENTIFIER tEQUAL Expression tSEMICOLON
+                { printf("found variable declaration\n"); };
 
 VarAffectation : tIDENTIFIER tEQUAL Expression tSEMICOLON
-                { printf("found variable affectation"); };
+                { printf("found variable affectation\n"); };
 
 Printf : tPRINTF tLEFTPAREN Expression tRIGHTPAREN tSEMICOLON
-        { printf("found printf"); };
+        { printf("found printf\n"); };
 
 Statement : VarDeclaration | VarAffectation | Printf;
 
@@ -45,7 +49,7 @@ Block : tLEFTBRACE StatementList tRIGHTBRACE | tLEFTBRACE tRIGHTBRACE;
 
 MainMethod : tINT tMAIN tLEFTPAREN tRIGHTPAREN Block;
 
-Program : MainMethod;
+Program : MainMethod { printf("found main\n"); };
 
 %%
 void yyerror(char *s) { fprintf(stderr, "%s\n", s); }

@@ -11,14 +11,17 @@ test_lex: build_lex
 	cat test/test.c | build/lexer
 
 genh: 
-	yacc -o intermediate/y.tab.h -d src/yacc.y
+	yacc -Wcounterexamples -o intermediate/y.tab.h -d src/yacc.y
 
 build_yacc: genh genlex
 	yacc -o intermediate/y.tab.c src/yacc.y
 	gcc -o build/yacc intermediate/y.tab.c intermediate/lexer.yy.c 
 
 run_yacc: build_yacc
-	build/yacc
+	build/yacc 
+
+test_yacc_nobuild:
+	cat test/test.c | build/yacc 
 
 test_yacc: build_yacc
 	cat test/test.c | build/yacc

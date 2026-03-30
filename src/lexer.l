@@ -13,7 +13,7 @@ printf return tPRINTF;
 
 const return tCONST;
 
-[_a-zA-Z][_a-zA-Z0-9]* return tIDENTIFIER;
+[_a-zA-Z][_a-zA-Z0-9]* { yylval.name = strdup(yytext); return tIDENTIFIER; };
 "=" return tEQUAL;
 "+" return tPLUS;
 "-" return tMINUS;
@@ -27,8 +27,8 @@ const return tCONST;
 "," return tCOMMA;
 "\n"; 
 
-[0-9] return tNUMBER;
-[1-9]+[eE]"+"?[0-9]+ return tNUMBEREXP;
+[0-9] { yylval.nb = atoi(yytext); return tNUMBER; };
+[1-9]+[eE]"+"?[0-9]+ { yylval.nb = atoi(yytext); return tNUMBER; };
 
 [ \t]+ ;
 

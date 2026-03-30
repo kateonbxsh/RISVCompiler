@@ -47,7 +47,7 @@ StatementList : Statement | Statement StatementList;
 
 Block : tLEFTBRACE StatementList tRIGHTBRACE | tLEFTBRACE tRIGHTBRACE;
 
-MainMethod : tINT tMAIN tLEFTPAREN tRIGHTPAREN Block;
+MainMethod : tMAIN Block;
 
 Program : MainMethod { printf("found main\n"); };
 

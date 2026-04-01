@@ -27,7 +27,7 @@ const return tCONST;
 "," return tCOMMA;
 "\n"; 
 
-[0-9] { yylval.nb = atoi(yytext); return tNUMBER; };
+[0-9]+ { yylval.nb = atoi(yytext); return tNUMBER; };
 [1-9]+[eE]"+"?[0-9]+ { yylval.nb = atoi(yytext); return tNUMBER; };
 
 [ \t]+ ;

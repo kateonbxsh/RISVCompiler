@@ -10,12 +10,13 @@ run_lex: build_lex
 test_lex: build_lex
 	cat test/test.c | build/lexer
 
-genh: 
+genh:
 	yacc -Wcounterexamples -o intermediate/y.tab.h -d src/yacc.y
 
 build_yacc: genh genlex
 	yacc -o intermediate/y.tab.c src/yacc.y
-	gcc -o build/yacc intermediate/y.tab.c intermediate/lexer.yy.c 
+	cp src/c/*.c src/c/*.h intermediate/
+	gcc -o build/yacc intermediate/*.c 
 
 run_yacc: build_yacc
 	build/yacc 

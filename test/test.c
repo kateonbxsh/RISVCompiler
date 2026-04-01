@@ -1,6 +1,8 @@
-int main() {
+main {
 
-    int a = 5;
-    const int b = c + d;
+    int a = 50;
+    int c, b;
+    c = 684;
+    b = a + c + 8 + 5;
 
 }

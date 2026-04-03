@@ -2,35 +2,44 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "symbol.h"
+#include "scope.h"
 
 void yyerror(char *s);
 FILE* out;
 symbol_table_t symbol_table;
+scope_t* current_scope;
+
 
 %}
 %union { int nb; char* name; }
 %token tINT
-%token tMAIN tPRINTF tCONST tERROR
+%token tMAIN tPRINTF tCONST tERROR tIF tELSE tWHILE
 %token <nb> tNUMBER
 %token <name> tIDENTIFIER
-%token tEQUAL tPLUS tMINUS tTIMES tDIVIDE 
-%token tLEFTPAREN tRIGHTPAREN tLEFTBRACE tRIGHTBRACE tSEMICOLON tCOMMA
+%token tEQUALS tPLUS tMINUS tTIMES tDIVIDE tGT tLT tGEQ tLEQ
+%token tLEFTPAREN tRIGHTPAREN tLEFTBRACE tRIGHTBRACE tSEMICOLON tCOMMA tAFFECT
 
 %type <nb> Expression
+%type <nb> Operator
 
-%right tEQUAL
+%right tEQUALS
 %left tPLUS tMINUS
 %left tTIMES tDIVIDE
 
 %start Program
 %%
 
-Operator : | tDIVIDE { printf("found divide operator\n"); }
-         | tTIMES { printf("found times operator\n"); }
-         | tMINUS { printf("found minus operator\n"); }
-         | tPLUS { printf("found plus operator\n"); };
+Operator : tGEQ { $$ = 9; }
+         | tLEQ { $$ = 8; }
+         | tGT { $$ = 7; }
+         | tLT { $$ = 6; }
+         | tEQUALS { $$ = 5; }
+         | tDIVIDE { $$ = 4; }
+         | tMINUS { $$ = 3; }
+         | tTIMES { $$ = 2; }
+         | tPLUS { $$ = 1; }
 
-Expression : Expression tPLUS Expression {
+Expression : Expression Operator Expression {
                 if (symbol_is_temporary(&symbol_table, $3)) {
                     symbol_table_pop_temporary(&symbol_table);
                 }
@@ -38,7 +47,35 @@ Expression : Expression tPLUS Expression {
                     symbol_table_pop_temporary(&symbol_table);
                 }
                 int addr = symbol_table_push_temporary(&symbol_table);
-                fprintf(out, "ADD %d %d %d\n", addr, $1, $3);
+                switch ($2) {
+                    case 1:
+                        fprintf(out, "ADD %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 2:
+                        fprintf(out, "MUL %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 3:
+                        fprintf(out, "SOU %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 4:
+                        fprintf(out, "DIV %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 5:
+                        fprintf(out, "EQU %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 6:
+                        fprintf(out, "INF %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 7:
+                        fprintf(out, "SUP %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 8:
+                        fprintf(out, "INF %d %d %d\n", addr, $1, $3);
+                        break;
+                    case 9:
+                        fprintf(out, "SUP %d %d %d\n", addr, $1, $3);
+                        break;
+                }
                 $$ = addr;
             }
            | tNUMBER {
@@ -51,7 +88,7 @@ Expression : Expression tPLUS Expression {
 MultivariableDeclaration : tIDENTIFIER tCOMMA MultivariableDeclaration { symbol_table_add(&symbol_table, $1); }
                            | tIDENTIFIER { symbol_table_add(&symbol_table, $1); };
 
-VarDeclaration : tINT tIDENTIFIER tEQUAL Expression tSEMICOLON
+VarDeclaration : tINT tIDENTIFIER tAFFECT Expression tSEMICOLON
                 { 
                     if (symbol_is_temporary(&symbol_table, $4)) {
                         symbol_table_pop_temporary(&symbol_table);
@@ -61,7 +98,7 @@ VarDeclaration : tINT tIDENTIFIER tEQUAL Expression tSEMICOLON
                 }
                 | tINT MultivariableDeclaration tSEMICOLON;
 
-VarAffectation : tIDENTIFIER tEQUAL Expression tSEMICOLON
+VarAffectation : tIDENTIFIER tAFFECT Expression tSEMICOLON
                 { 
                     if (symbol_is_temporary(&symbol_table, $3)) {
                         symbol_table_pop_temporary(&symbol_table);
@@ -71,9 +108,27 @@ VarAffectation : tIDENTIFIER tEQUAL Expression tSEMICOLON
                 };
 
 Printf : tPRINTF tLEFTPAREN Expression tRIGHTPAREN tSEMICOLON
-        { printf("found printf\n"); };
+        { 
+            if (symbol_is_temporary(&symbol_table, $3)) {
+                symbol_table_pop_temporary(&symbol_table);
+            }
+            fprintf(out, "PRI %d\n", $3);
+        };
 
-Statement : VarDeclaration | VarAffectation | Printf;
+IfCondition : tIF tLEFTPAREN Expression tRIGHTPAREN { 
+            if (symbol_is_temporary(&symbol_table, $3)) {
+                symbol_table_pop_temporary(&symbol_table);
+            }
+            fprintf(out, "JMF %d\n", $3);
+        };
+
+SingleIfStatement : IfCondition Block;
+
+IfStatement : SingleIfStatement tELSE IfStatement | SingleIfStatement;
+
+WhileStatement : tWHILE tLEFTPAREN Expression tRIGHTPAREN Block;
+
+Statement : VarDeclaration | VarAffectation | Printf | IfStatement | WhileStatement;
 
 StatementList : Statement | Statement StatementList;
 

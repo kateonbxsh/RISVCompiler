@@ -178,13 +178,17 @@ void scope_resolve_references(scope_t* scope) {
         if (current->opcode == JMP) {
             if (current->relative)
                 current->arguments[0].value = current->address + current->arguments[0].value;
-            else 
-                current->arguments[0].value = current->arguments[0].instruction->address;
+            else {
+                instruction_t* addr = current->arguments[0].instruction;
+                current->arguments[0].value = addr ? addr->address : 0; // test for NULL
+            }
         } else if (current->opcode == JMF) {
             if (current->relative)
                 current->arguments[1].value = current->address + current->arguments[1].value;
-            else 
-                current->arguments[1].value = current->arguments[1].instruction->address;
+            else {
+                instruction_t* addr = current->arguments[1].instruction;
+                current->arguments[1].value = addr ? addr->address : 0; // test for NULL
+            }
         } 
         current = current->next;
     }

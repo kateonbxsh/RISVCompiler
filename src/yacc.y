@@ -141,7 +141,22 @@ IfStatement: TakenIfStatement {
         $$ = $1;
     };
 
-WhileStatement : tWHILE tLEFTPAREN Expression tRIGHTPAREN Block;
+WhileStatement : tWHILE tLEFTPAREN {
+        $<nb>$ = (long) current_scope->last;
+    } Expression tRIGHTPAREN {
+        instruction_t* jmf = i_op2(JMF, (argument_t){$4}, (argument_t){0});
+        jmf->relative = 1;
+        scope_add_instruction(current_scope, jmf);
+        $<nb>$ = (long) jmf;
+    } Block {
+        instruction_t* starting_point = (instruction_t*) $<nb>3; // first instruction after it
+        if (starting_point) starting_point = starting_point->next;
+        instruction_t* jmf = (instruction_t*) $<nb>6; // skip loop if false
+        jmf->arguments[1].value = $7 + 2;
+        instruction_t* jmp = i_op1(JMP, (argument_t){starting_point}); // jump back to test loop again
+        jmp->relative = 0;
+        scope_add_instruction(current_scope, jmp);
+    };
 
 Statement
     : Block

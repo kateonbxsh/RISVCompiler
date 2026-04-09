@@ -3,16 +3,8 @@ main {
     int a = 1 + 2;
     int b = 5;
 
-    if (a) {
+    while (a + 6 + 7) {
         b = b + 1;
-    } else if (b) {
-        b = b + 8;
-    } else if (b) {
-        b = b + 8;
-    } else if (b) {
-        b = b + 8;
-    } else {
-        b = b - 6;
     }
     
 }

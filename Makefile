@@ -1,4 +1,5 @@
 genlex:
+	mkdir -p intermediate
 	flex -o intermediate/lexer.yy.c src/lexer.l 
 
 build_lex: genlex
@@ -16,6 +17,7 @@ genh:
 build_yacc: genh genlex
 	yacc -o intermediate/y.tab.c src/yacc.y
 	cp src/c/*.c src/c/*.h intermediate/
+	mkdir -p build
 	gcc -o build/yacc intermediate/*.c 
 
 run_yacc: build_yacc

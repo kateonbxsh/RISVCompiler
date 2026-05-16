@@ -71,7 +71,7 @@ scope_t* scope_flush(scope_t* scope) {
 
 void scope_resolve_references(scope_t* scope) {
     instruction_t* current = scope->instruction_list;
-    int program_counter = 1;
+    int program_counter = 0;
 
     while (current) {
         current->address = program_counter++;

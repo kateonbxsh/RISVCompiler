@@ -17,9 +17,9 @@ instruction_t* emit_jmp_placeholder();
 void patch_jmf_relative(instruction_t* jmf, long offset);
 void patch_jmp_relative(instruction_t* jmp, long offset);
 
-void begin_block(void);
-long end_block(void);
-void end_main_method(void);
+void begin_block();
+long end_block();
+void end_main_method();
 
 instruction_t* current_last_instruction();
 instruction_t* first_instruction_after(instruction_t* instruction);

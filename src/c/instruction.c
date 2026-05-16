@@ -84,6 +84,8 @@ static const char* opcode_name(opcode_t opcode) {
 void instruction_write(FILE* out, instruction_t* instruction) {
     const char* name = opcode_name(instruction->opcode);
 
+    fprintf(out, "0x%02X: ", instruction->address);
+
     switch(instruction->opcode) {
         case OP_ADD:
         case OP_MUL:

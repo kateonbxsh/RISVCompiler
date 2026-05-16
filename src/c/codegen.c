@@ -1,4 +1,5 @@
 #include "codegen.h"
+#include "registers.h"
 
 static symbol_table_t* symbol_table;
 static scope_t** current_scope;
@@ -7,30 +8,30 @@ static scope_t* scope() {
     return *current_scope;
 }
 
-argument_t arg_value(long value) {
+static argument_t arg_value(long value) {
     argument_t argument = { .value = value };
     return argument;
 }
 
-instruction_t* emit1(opcode_t opcode, long a1) {
+static instruction_t* emit1(opcode_t opcode, long a1) {
     instruction_t* instruction = i_op1(opcode, arg_value(a1));
     scope_add_instruction(scope(), instruction);
     return instruction;
 }
 
-instruction_t* emit2(opcode_t opcode, long a1, long a2) {
+static instruction_t* emit2(opcode_t opcode, long a1, long a2) {
     instruction_t* instruction = i_op2(opcode, arg_value(a1), arg_value(a2));
     scope_add_instruction(scope(), instruction);
     return instruction;
 }
 
-instruction_t* emit3(opcode_t opcode, long a1, long a2, long a3) {
+static instruction_t* emit3(opcode_t opcode, long a1, long a2, long a3) {
     instruction_t* instruction = i_op3(opcode, arg_value(a1), arg_value(a2), arg_value(a3));
     scope_add_instruction(scope(), instruction);
     return instruction;
 }
 
-void release_if_temporary(long address) {
+static void release_if_temporary(long address) {
     if (symbol_is_temporary(symbol_table, address)) {
         symbol_table_pop_temporary(symbol_table);
     }
@@ -39,6 +40,7 @@ void release_if_temporary(long address) {
 void codegen_init(symbol_table_t* symbols, scope_t** scope) {
     symbol_table = symbols;
     current_scope = scope;
+    registers_init();
 }
 
 long emit_number(long value) {

@@ -123,3 +123,16 @@ void scope_write_instructions(FILE* file, scope_t* scope) {
         current = current->next;
     }
 }
+
+// write every instruction from a scope into the binary output file
+void scope_write_binary(FILE* file, scope_t* scope) {
+    if (!scope) {
+        return;
+    }
+
+    instruction_t* current = scope->instruction_list;
+    while (current) {
+        instruction_write_binary(file, current);
+        current = current->next;
+    }
+}

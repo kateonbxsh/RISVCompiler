@@ -15,3 +15,26 @@ The current register allocation strategy is intentionally simple: binary express
 Limitations:
 - if in an expression is long enough so that it uses all general registers, it will give an error
 - the register system does not know if a variable is needed later on, so it stores it back to memory right away after being done
+
+Function prefix and suffix:
+
+At the beginning of a function, the compiler adds a prefix to save the caller state and create a new stack frame. First, the return address register `ra` is stored at `MEM[sp]`, then `sp` is incremented. Then the old frame pointer `fp` is stored at the new `MEM[sp]`, and `sp` is incremented again. Finally, `fp` is copied from `sp`, so the function has its own frame base. After this, local variables are addressed relative to `fp`.
+
+```
+STI sp ra   ; save return address at memory[sp]
+sp++        ; move stack pointer forward
+STI sp fp   ; save old frame pointer at memory[sp]
+sp++        ; move stack pointer forward
+COP fp sp   ; new frame starts here
+```
+
+```
+COP sp fp   ; discard local variables, go back to frame base
+sp--        ; move to saved old fp
+LDI fp sp   ; restore caller's fp
+sp--        ; move to saved ra
+LDI ra sp   ; restore return address
+JI ra       ; jump back to caller
+```
+
+At the end of a function, the compiler adds a suffix to restore the caller state. It first copies `fp` back into `sp`, which discards the current function's local variables. Then it decrements `sp` and reloads the old `fp` from memory. It decrements `sp` again and reloads the saved return address into `ra`. Finally, it jumps indirectly to `ra`, returning execution to the caller.

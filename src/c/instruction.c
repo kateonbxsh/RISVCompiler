@@ -238,6 +238,73 @@ void instruction_write(FILE* out, instruction_t* instruction) {
     }
 }
 
+// get the first byte operand for the fixed-size binary instruction
+unsigned char instruction_binary_a(instruction_t* instruction) {
+    return (unsigned char) instruction->arguments[0].value;
+}
+
+// get the second byte operand for the fixed-size binary instruction
+unsigned char instruction_binary_b(instruction_t* instruction) {
+    return (unsigned char) instruction->arguments[1].value;
+}
+
+// get the third byte operand for the fixed-size binary instruction
+unsigned char instruction_binary_c(instruction_t* instruction) {
+    return (unsigned char) instruction->arguments[2].value;
+}
+
+// write one instruction as OP A B C bytes
+void instruction_write_binary(FILE* out, instruction_t* instruction) {
+    unsigned char bytes[4] = {0, 0, 0, 0};
+
+    bytes[0] = (unsigned char) instruction->opcode;
+
+    switch(instruction->opcode) {
+        case OP_ADD:
+        case OP_MUL:
+        case OP_SOU:
+        case OP_DIV:
+        case OP_AND:
+        case OP_OR:
+        case OP_BAND:
+        case OP_BOR:
+        case OP_LT:
+        case OP_GT:
+        case OP_EQ:
+        case OP_LEQ:
+        case OP_GEQ:
+        case OP_NEQ:
+            bytes[1] = instruction_binary_a(instruction);
+            bytes[2] = instruction_binary_b(instruction);
+            bytes[3] = instruction_binary_c(instruction);
+            break;
+
+        case OP_COP:
+        case OP_NOT:
+        case OP_BNOT:
+        case OP_LOAD:
+        case OP_STORE:
+        case OP_LOADR:
+        case OP_STORER:
+        case OP_AFC:
+        case OP_JMF:
+            bytes[1] = instruction_binary_a(instruction);
+            bytes[2] = instruction_binary_b(instruction);
+            break;
+
+        case OP_JMP:
+        case OP_JMPR:
+        case OP_PRI:
+            bytes[1] = instruction_binary_a(instruction);
+            break;
+
+        case OP_NOP:
+            break;
+    }
+
+    fwrite(bytes, sizeof(bytes), 1, out);
+}
+
 // attach a human-readable comment to an instruction
 void instruction_set_comment(instruction_t* instruction, const char* comment) {
     if (instruction) {

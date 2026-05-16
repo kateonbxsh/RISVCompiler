@@ -33,6 +33,11 @@ int register_is_general(int reg) {
     return reg >= REG_FIRST_GENERAL && reg <= REG_LAST_GENERAL;
 }
 
+// check if a general register is currently needed by the compiler
+int register_is_in_use(int reg) {
+    return register_is_general(reg) && registers[reg].in_use;
+}
+
 // check if register holds a temporary/computed value rather than a clean memory copy
 int register_is_temporary(int reg) {
     return register_is_general(reg) && registers[reg].temporary;
@@ -93,6 +98,16 @@ void register_bind_memory(int reg, int memory_address) {
 void register_forget_memory(int memory_address) {
     for (int reg = REG_FIRST_GENERAL; reg <= REG_LAST_GENERAL; reg++) {
         if (registers[reg].memory_address == memory_address) {
+            registers[reg].memory_address = REG_NO_MEMORY;
+            registers[reg].temporary = 0;
+        }
+    }
+}
+
+// forget cached values in registers that the current expression is not using
+void register_forget_available() {
+    for (int reg = REG_FIRST_GENERAL; reg <= REG_LAST_GENERAL; reg++) {
+        if (!registers[reg].in_use) {
             registers[reg].memory_address = REG_NO_MEMORY;
             registers[reg].temporary = 0;
         }

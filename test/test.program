@@ -1,14 +1,16 @@
-function test() {
+let n = 5;
 
-    return 0;
-
+function fact() {
+    if (n == 0) {
+        return 1;
+    }
+    let x = n;
+    n = n - 1;
+    return x * fact();
 }
 
 main { 
     
-    let a = 1 + 3;
-    if (a == 5) {
-        let b = 2 + a + test();
-    }
+    printf(fact());
 
 }

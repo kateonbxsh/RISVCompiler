@@ -8,6 +8,7 @@
 void yyerror(char *s);
 int yylex(void);
 FILE* out;
+FILE* binary_out;
 symbol_table_t symbol_table;
 scope_t* current_scope;
 
@@ -35,65 +36,65 @@ scope_t* current_scope;
 %start Program
 %%
 
-Expression : Expression tOR Expression { $$ = emit_binary_expression(OP_OR, $1, $3); }
-           | Expression tAND Expression { $$ = emit_binary_expression(OP_AND, $1, $3); }
-           | Expression tGT Expression { $$ = emit_binary_expression(OP_GT, $1, $3); }
-           | Expression tLT Expression { $$ = emit_binary_expression(OP_LT, $1, $3); }
-           | Expression tGEQ Expression { $$ = emit_binary_expression(OP_GEQ, $1, $3); }
-           | Expression tLEQ Expression { $$ = emit_binary_expression(OP_LEQ, $1, $3); }
-           | Expression tEQUALS Expression { $$ = emit_binary_expression(OP_EQ, $1, $3); }
-           | Expression tNEQ Expression { $$ = emit_binary_expression(OP_NEQ, $1, $3); }
-           | Expression tDIVIDE Expression { $$ = emit_binary_expression(OP_DIV, $1, $3); }
-           | Expression tMINUS Expression { $$ = emit_binary_expression(OP_SOU, $1, $3); }
-           | Expression tTIMES Expression { $$ = emit_binary_expression(OP_MUL, $1, $3); }
-           | Expression tPLUS Expression { $$ = emit_binary_expression(OP_ADD, $1, $3); }
-           | tNOT Expression { $$ = emit_unary_expression(OP_NOT, $2); }
-           | tADDRESS tIDENTIFIER { $$ = emit_address_of($2); }
-           | tTIMES Expression %prec tDEREF { $$ = emit_pointer_load($2); }
+Expression : Expression tOR Expression { $$ = code_add_binary_expression(OP_OR, $1, $3); }
+           | Expression tAND Expression { $$ = code_add_binary_expression(OP_AND, $1, $3); }
+           | Expression tGT Expression { $$ = code_add_binary_expression(OP_GT, $1, $3); }
+           | Expression tLT Expression { $$ = code_add_binary_expression(OP_LT, $1, $3); }
+           | Expression tGEQ Expression { $$ = code_add_binary_expression(OP_GEQ, $1, $3); }
+           | Expression tLEQ Expression { $$ = code_add_binary_expression(OP_LEQ, $1, $3); }
+           | Expression tEQUALS Expression { $$ = code_add_binary_expression(OP_EQ, $1, $3); }
+           | Expression tNEQ Expression { $$ = code_add_binary_expression(OP_NEQ, $1, $3); }
+           | Expression tDIVIDE Expression { $$ = code_add_binary_expression(OP_DIV, $1, $3); }
+           | Expression tMINUS Expression { $$ = code_add_binary_expression(OP_SOU, $1, $3); }
+           | Expression tTIMES Expression { $$ = code_add_binary_expression(OP_MUL, $1, $3); }
+           | Expression tPLUS Expression { $$ = code_add_binary_expression(OP_ADD, $1, $3); }
+           | tNOT Expression { $$ = code_add_unary_expression(OP_NOT, $2); }
+           | tADDRESS tIDENTIFIER { $$ = code_add_variable_address($2); }
+           | tTIMES Expression %prec tDEREF { $$ = code_add_pointer_load($2); }
            | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
-           | tIDENTIFIER tLEFTPAREN tRIGHTPAREN { $$ = emit_function_call($1); }
+           | tIDENTIFIER tLEFTPAREN tRIGHTPAREN { $$ = code_add_function_call($1); }
            | tNUMBER {
-                $$ = emit_number($1);
+                $$ = code_add_constant_load($1);
             }
-           | tIDENTIFIER { $$ = emit_identifier($1); };
+           | tIDENTIFIER { $$ = code_add_variable_load($1); };
 
 PointerTarget : tTIMES PointerOperand %prec tDEREF { $$ = $2; };
 
-PointerOperand : tIDENTIFIER { $$ = emit_identifier($1); }
+PointerOperand : tIDENTIFIER { $$ = code_add_variable_load($1); }
                | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
-               | tTIMES PointerOperand %prec tDEREF { $$ = emit_pointer_load($2); };
+               | tTIMES PointerOperand %prec tDEREF { $$ = code_add_pointer_load($2); };
 
-MultivariableDeclaration : tIDENTIFIER tCOMMA MultivariableDeclaration { emit_empty_variable_declaration($1); }
-                           | tIDENTIFIER { emit_empty_variable_declaration($1); };
+MultivariableDeclaration : tIDENTIFIER tCOMMA MultivariableDeclaration { code_add_empty_variable_declaration($1); }
+                           | tIDENTIFIER { code_add_empty_variable_declaration($1); };
 
 VarDeclaration : tLET tIDENTIFIER tAFFECT Expression tSEMICOLON
                 { 
-                    emit_variable_declaration($2, $4);
+                    code_add_variable_declaration($2, $4);
                 }
                 | tLET MultivariableDeclaration tSEMICOLON;
 
 VarAffectation : tIDENTIFIER tAFFECT Expression tSEMICOLON
                 { 
-                    emit_variable_assignment($1, $3);
+                    code_add_variable_assignment($1, $3);
                 };
 
 PointerAffectation : PointerTarget tAFFECT Expression tSEMICOLON
                 {
-                    emit_pointer_assignment($1, $3);
+                    code_add_pointer_store($1, $3);
                 };
 
 ReturnStatement : tRETURN Expression tSEMICOLON
                 {
-                    emit_return($2);
+                    code_add_return_statement($2);
                 };
 
 Printf : tPRINTF tLEFTPAREN Expression tRIGHTPAREN tSEMICOLON
         { 
-            emit_print($3);
+            code_add_print_statement($3);
         };
 
 IfCondition: tIF tLEFTPAREN Expression tRIGHTPAREN {
-          $$ = (long) emit_jmf_placeholder($3);
+          $$ = (long) code_add_conditional_jump_placeholder($3);
       };
 
 SingleIfStatement : IfCondition Block {
@@ -107,13 +108,13 @@ TakenIfStatement : IfCondition Block tELSE {
 }
 
 IfStatement: TakenIfStatement {
-        $<nb>$ = (long) emit_jmp_placeholder();
+        $<nb>$ = (long) code_add_jump_placeholder();
     } IfStatement {
         patch_jmp_relative((instruction_t*) $<nb>2, $3 + 1);
         $$ = $1 + $3 + 1;
     }
     | TakenIfStatement {
-        $<nb>$ = (long) emit_jmp_placeholder();
+        $<nb>$ = (long) code_add_jump_placeholder();
     } Block {
         patch_jmp_relative((instruction_t*) $<nb>2, $3 + 1);
         $$ = $1 + $3 + 1;
@@ -124,13 +125,13 @@ IfStatement: TakenIfStatement {
 
 WhileStatement : tWHILE tLEFTPAREN {
         $<nb>$ = (long) current_last_instruction();
-        codegen_reset_registers();
+        code_reset_registers();
     } Expression tRIGHTPAREN {
-        $<nb>$ = (long) emit_jmf_placeholder($4);
+        $<nb>$ = (long) code_add_conditional_jump_placeholder($4);
     } Block {
         instruction_t* starting_point = first_instruction_after((instruction_t*) $<nb>3);
         patch_jmf_relative((instruction_t*) $<nb>6, $7 + 2);
-        emit_loop_back_jump(starting_point);
+        code_add_loop_back_jump(starting_point);
     };
 
 Statement
@@ -182,7 +183,7 @@ FunctionDefinition : tFUNCTION tIDENTIFIER tLEFTPAREN tRIGHTPAREN
 
 ProgramStart :
     {
-        emit_program_start();
+        code_add_program_start();
     }
 ;
 
@@ -203,15 +204,24 @@ int main() {
 
     current_scope = scope_init();
     symbol_table_init(&symbol_table);
-    codegen_init(&symbol_table, &current_scope);
+    code_init(&symbol_table, &current_scope);
     out = fopen("build/out.s", "w+");
     if (out == NULL) {
         yyerror("Could not write to assembly file");
         return 1;
     }
+    binary_out = fopen("build/out.bin", "wb+");
+    if (binary_out == NULL) {
+        yyerror("Could not write to binary file");
+        fclose(out);
+        return 1;
+    }
     yyparse();
     scope_resolve_references(current_scope);
     scope_write_instructions(out, current_scope);
+    scope_write_binary(binary_out, current_scope);
+    fclose(out);
+    fclose(binary_out);
 
     return 0;
 

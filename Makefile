@@ -1,31 +1,57 @@
-genlex:
-	mkdir -p intermediate
-	flex -o intermediate/lexer.yy.c src/lexer.l 
+CC      := gcc
+FLEX    := flex
+YACC    := yacc
 
-build_lex: genlex
-	gcc -o build/lexer intermediate/lexer.yy.c 
+SRC_DIR := src
+C_DIR   := $(SRC_DIR)/c
+TEST    := test/test.program
 
-run_lex: build_lex
-	build/lexer
+BUILD_DIR := build
+GEN_DIR   := intermediate
 
-test_lex: build_lex
-	cat test/test.program | build/lexer
+CFLAGS  := -Wall -Wextra -Wno-unused-function -I$(C_DIR) -I$(GEN_DIR)
+LDFLAGS :=
 
-genh:
-	yacc -Wcounterexamples -o intermediate/y.tab.h -d src/yacc.y
+LEXER_SRC := $(SRC_DIR)/lexer.l
+PARSER_SRC := $(SRC_DIR)/yacc.y
+C_SOURCES := $(wildcard $(C_DIR)/*.c)
 
-build_yacc: genh genlex
-	yacc -o intermediate/y.tab.c src/yacc.y
-	cp src/c/*.c src/c/*.h intermediate/
-	mkdir -p build
-	gcc -o build/yacc intermediate/*.c 
+LEXER_C := $(GEN_DIR)/lexer.yy.c
+PARSER_C := $(GEN_DIR)/y.tab.c
+PARSER_H := $(GEN_DIR)/y.tab.h
 
-run_yacc: build_yacc
-	build/yacc
+PARSER_BIN := $(BUILD_DIR)/yacc
+
+.PHONY: all clean run test test_yacc test_yacc_nobuild build_yacc genlex genh
+
+all: $(PARSER_BIN)
+
+$(BUILD_DIR) $(GEN_DIR):
+	mkdir -p $@
+
+$(LEXER_C): $(LEXER_SRC) $(PARSER_H) | $(GEN_DIR)
+	$(FLEX) -o $@ $<
+
+$(PARSER_C) $(PARSER_H): $(PARSER_SRC) | $(GEN_DIR)
+	$(YACC) -Wcounterexamples -d -o $(PARSER_C) $<
+
+$(PARSER_BIN): $(PARSER_C) $(LEXER_C) $(C_SOURCES) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -o $@ $(PARSER_C) $(LEXER_C) $(C_SOURCES) $(LDFLAGS)
+
+run: $(PARSER_BIN)
+	$(PARSER_BIN)
+
+test: test_yacc
+
+test_yacc: $(PARSER_BIN)
+	$(PARSER_BIN) < $(TEST)
 
 test_yacc_nobuild:
-	cat test/test.program | build/yacc
+	$(PARSER_BIN) < $(TEST)
 
-test_yacc: build_yacc
-	cat test/test.program | build/yacc
+clean:
+	rm -rf $(BUILD_DIR) $(GEN_DIR)
 
+genlex: $(LEXER_C)
+genh: $(PARSER_H)
+build_yacc: $(PARSER_BIN)

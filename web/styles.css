@@ -1,0 +1,498 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f4ee;
+  --panel: #fffdf8;
+  --ink: #1d1c19;
+  --muted: #777168;
+  --line: #d8d0c3;
+  --line-soft: #ece5da;
+  --accent: #2f766d;
+  --accent-dark: #1f5b54;
+  --blue: #355f8f;
+  --yellow: #f0d98d;
+  --green-soft: #e7f0e8;
+  --blue-soft: #e7edf5;
+  --red: #a9483f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+.file-button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fffaf1;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+button:hover,
+.file-button:hover {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.app-shell {
+  width: min(1380px, calc(100% - 20px));
+  margin: 0 auto;
+  padding: 14px 0 20px;
+}
+
+.topbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 18px;
+  line-height: 1.1;
+  font-weight: 650;
+}
+
+h2 {
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 650;
+  text-transform: lowercase;
+}
+
+.topbar p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.status-strip,
+.file-tools,
+.controls,
+.memory-tools,
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill,
+.soft-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  background: #fffaf1;
+}
+
+.pill {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fffaf1;
+}
+
+.soft-pill {
+  color: var(--accent-dark);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(260px, 0.66fr) minmax(330px, 1.05fr);
+  grid-auto-rows: minmax(168px, auto);
+  gap: 8px;
+}
+
+.panel {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.panel-head {
+  min-height: 36px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.editor-panel,
+.instructions-panel {
+  grid-row: span 2;
+}
+
+.memory-panel {
+  grid-column: span 2;
+}
+
+#assembly-input {
+  width: 100%;
+  height: 390px;
+  border: 0;
+  resize: vertical;
+  padding: 9px 10px;
+  color: var(--ink);
+  background: #fffdf8;
+  outline: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.hint-row {
+  min-height: 30px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.file-button input {
+  display: none;
+}
+
+.speed-control label,
+.memory-tools label {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+#speed-input {
+  width: 92px;
+  accent-color: var(--accent);
+}
+
+#memory-start {
+  width: 58px;
+  min-height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 6px;
+  background: #fffaf1;
+}
+
+.controls {
+  padding: 9px 10px;
+}
+
+.controls button:first-child,
+.controls button:nth-child(2) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf8;
+}
+
+.controls button:first-child:hover,
+.controls button:nth-child(2):hover {
+  background: var(--accent-dark);
+}
+
+.machine-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.metric {
+  min-height: 48px;
+  padding: 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: #fffaf1;
+}
+
+.metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 6px;
+}
+
+.metric strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+}
+
+.output-box {
+  margin: 0 10px 10px;
+  min-height: 98px;
+  border: 1px solid #2d2a25;
+  border-radius: 4px;
+  background: #23201c;
+  color: #e8f0e8;
+}
+
+.box-title {
+  color: var(--muted);
+  font-size: 10px;
+  padding: 7px 8px 0;
+}
+
+.output-box .box-title {
+  color: #b8c2b8;
+}
+
+#output-view {
+  min-height: 70px;
+  margin: 0;
+  padding: 8px;
+  white-space: pre-wrap;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+}
+
+.instruction-list {
+  height: 498px;
+  overflow: auto;
+}
+
+.instruction-row {
+  min-height: 28px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-soft);
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 8px;
+  align-items: start;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+}
+
+.instruction-row.active {
+  background: var(--blue-soft);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.instruction-row.executed {
+  color: var(--muted);
+}
+
+.instruction-address {
+  color: var(--blue);
+}
+
+.instruction-comment {
+  color: var(--muted);
+}
+
+.register-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+}
+
+.register-cell {
+  min-height: 58px;
+  padding: 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: #fffaf1;
+}
+
+.register-cell.changed {
+  border-color: #d7b33f;
+  background: #fff4c9;
+}
+
+.register-cell.special {
+  background: var(--green-soft);
+}
+
+.register-name {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.register-value {
+  margin-top: 5px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.register-note {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 8px;
+  padding: 10px;
+}
+
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(36px, 1fr));
+  gap: 4px;
+}
+
+.memory-cell {
+  min-height: 38px;
+  padding: 5px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: #fffaf1;
+}
+
+.memory-cell.changed {
+  border-color: #d7b33f;
+  background: #fff4c9;
+}
+
+.memory-cell.pointed {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.memory-address,
+.memory-value {
+  display: block;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.memory-address {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.memory-value {
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pointer-panel {
+  min-height: 170px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: #fffaf1;
+}
+
+.pointer-list {
+  padding: 6px 8px 8px;
+}
+
+.pointer-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 10px;
+}
+
+.pointer-item:last-child {
+  border-bottom: 0;
+}
+
+.pointer-item code {
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.error {
+  color: var(--red);
+}
+
+@media (max-width: 1180px) {
+  .workspace {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .instructions-panel,
+  .editor-panel,
+  .memory-panel {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: min(100% - 12px, 1380px);
+  }
+
+  .topbar,
+  .panel-head,
+  .hint-row,
+  .memory-layout {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspace {
+    display: block;
+  }
+
+  .panel {
+    margin-bottom: 8px;
+  }
+
+  .editor-panel,
+  .instructions-panel,
+  .memory-panel {
+    grid-column: auto;
+  }
+
+  .machine-grid,
+  .memory-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .register-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .memory-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

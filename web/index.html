@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assembly Workbench</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>Assembly Workbench</h1>
+        <p>Step through the compiler output with registers, memory, stack, and printed values in view.</p>
+      </div>
+      <div class="status-strip" aria-live="polite">
+        <span id="state-pill" class="pill">idle</span>
+        <span id="pc-pill" class="pill">pc 0x00</span>
+        <span id="cycle-pill" class="pill">cycle 0</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel editor-panel">
+        <div class="panel-head">
+          <h2>Program</h2>
+          <div class="file-tools">
+            <label class="file-button">
+              <input id="file-input" type="file" accept=".s,.asm,.bin,application/octet-stream">
+              Import
+            </label>
+            <button id="load-text-button" type="button">Load Text</button>
+            <button id="load-sample-button" type="button">Sample</button>
+          </div>
+        </div>
+        <textarea id="assembly-input" spellcheck="false"></textarea>
+        <div class="hint-row">
+          <span>Readable assembly or raw 4-byte binary: <code>OP A B C</code>.</span>
+          <span id="load-message"></span>
+        </div>
+      </section>
+
+      <section class="panel execution-panel">
+        <div class="panel-head">
+          <h2>Controls</h2>
+          <div class="speed-control">
+            <label for="speed-input">Delay</label>
+            <input id="speed-input" type="range" min="40" max="900" value="240">
+          </div>
+        </div>
+        <div class="controls">
+          <button id="step-button" type="button">Step</button>
+          <button id="run-button" type="button">Run</button>
+          <button id="pause-button" type="button">Pause</button>
+          <button id="reset-button" type="button">Reset</button>
+        </div>
+        <div class="machine-grid">
+          <div class="metric">
+            <span>Next</span>
+            <strong id="next-instruction">NOP</strong>
+          </div>
+          <div class="metric">
+            <span>Printed</span>
+            <strong id="print-count">0</strong>
+          </div>
+          <div class="metric">
+            <span>Instructions</span>
+            <strong id="instruction-count">0</strong>
+          </div>
+        </div>
+        <div class="output-box">
+          <div class="box-title">Output</div>
+          <pre id="output-view"></pre>
+        </div>
+      </section>
+
+      <section class="panel instructions-panel">
+        <div class="panel-head">
+          <h2>Instructions</h2>
+          <span id="format-pill" class="soft-pill">text</span>
+        </div>
+        <div id="instruction-list" class="instruction-list"></div>
+      </section>
+
+      <section class="panel registers-panel">
+        <div class="panel-head">
+          <h2>Registers</h2>
+          <span class="soft-pill">16 x 8-bit</span>
+        </div>
+        <div id="register-grid" class="register-grid"></div>
+      </section>
+
+      <section class="panel memory-panel">
+        <div class="panel-head">
+          <h2>Memory</h2>
+          <div class="memory-tools">
+            <label for="memory-start">From</label>
+            <input id="memory-start" type="number" min="0" max="255" value="0">
+          </div>
+        </div>
+        <div class="memory-layout">
+          <div id="memory-grid" class="memory-grid"></div>
+          <aside class="pointer-panel">
+            <div class="box-title">Important Pointers</div>
+            <div id="pointer-list" class="pointer-list"></div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

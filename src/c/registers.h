@@ -29,12 +29,14 @@ void registers_init();
 int register_alloc();
 void register_free(int reg);
 int register_is_general(int reg);
+int register_is_in_use(int reg);
 int register_is_temporary(int reg);
 int register_memory_address(int reg);
 
 int register_find_memory(int memory_address);
 void register_bind_memory(int reg, int memory_address);
 void register_forget_memory(int memory_address);
+void register_forget_available();
 void register_clear_memory(int reg);
 void register_mark_temporary(int reg);
 

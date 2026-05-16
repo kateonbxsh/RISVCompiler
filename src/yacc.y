@@ -17,32 +17,41 @@ scope_t* current_scope;
 %token tMAIN tPRINTF tCONST tERROR tIF tELSE tWHILE
 %token <nb> tNUMBER
 %token <name> tIDENTIFIER
-%token tEQUALS tPLUS tMINUS tTIMES tDIVIDE tGT tLT tGEQ tLEQ
+%token tEQUALS tNEQ tPLUS tMINUS tTIMES tDIVIDE tGT tLT tGEQ tLEQ
+%token tNOT tAND tOR
 %token tLEFTPAREN tRIGHTPAREN tLEFTBRACE tRIGHTBRACE tSEMICOLON tCOMMA tAFFECT
 
 %type <nb> Expression
 %type <nb> IfCondition SingleIfStatement Block TakenIfStatement IfStatement
 
-%left tEQUALS tGT tLT tGEQ tLEQ
+%left tOR
+%left tAND
+%left tEQUALS tNEQ tGT tLT tGEQ tLEQ
 %left tPLUS tMINUS
 %left tTIMES tDIVIDE
+%right tNOT
 
 %start Program
 %%
 
-Expression : Expression tGT Expression { $$ = emit_binary_expression(OP_GT, $1, $3); }
+Expression : Expression tOR Expression { $$ = emit_binary_expression(OP_OR, $1, $3); }
+           | Expression tAND Expression { $$ = emit_binary_expression(OP_AND, $1, $3); }
+           | Expression tGT Expression { $$ = emit_binary_expression(OP_GT, $1, $3); }
            | Expression tLT Expression { $$ = emit_binary_expression(OP_LT, $1, $3); }
            | Expression tGEQ Expression { $$ = emit_binary_expression(OP_GEQ, $1, $3); }
            | Expression tLEQ Expression { $$ = emit_binary_expression(OP_LEQ, $1, $3); }
            | Expression tEQUALS Expression { $$ = emit_binary_expression(OP_EQ, $1, $3); }
+           | Expression tNEQ Expression { $$ = emit_binary_expression(OP_NEQ, $1, $3); }
            | Expression tDIVIDE Expression { $$ = emit_binary_expression(OP_DIV, $1, $3); }
            | Expression tMINUS Expression { $$ = emit_binary_expression(OP_SOU, $1, $3); }
            | Expression tTIMES Expression { $$ = emit_binary_expression(OP_MUL, $1, $3); }
            | Expression tPLUS Expression { $$ = emit_binary_expression(OP_ADD, $1, $3); }
+           | tNOT Expression { $$ = emit_unary_expression(OP_NOT, $2); }
+           | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
            | tNUMBER {
                 $$ = emit_number($1);
             }
-           | tIDENTIFIER { $$ = symbol_get_address(&symbol_table, $1); };
+           | tIDENTIFIER { $$ = emit_identifier($1); };
 
 MultivariableDeclaration : tIDENTIFIER tCOMMA MultivariableDeclaration { symbol_table_add(&symbol_table, $1); }
                            | tIDENTIFIER { symbol_table_add(&symbol_table, $1); };
@@ -95,6 +104,7 @@ IfStatement: TakenIfStatement {
 
 WhileStatement : tWHILE tLEFTPAREN {
         $<nb>$ = (long) current_last_instruction();
+        codegen_reset_registers();
     } Expression tRIGHTPAREN {
         $<nb>$ = (long) emit_jmf_placeholder($4);
     } Block {

@@ -19,6 +19,10 @@ const return tCONST;
 
 true|false { yylval.nb = strcmp(yytext, "true") == 0 ? 1 : 0; return tNUMBER; }
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.name = strdup(yytext); return tIDENTIFIER; };
+"!=" return tNEQ;
+"&&" return tAND;
+"||" return tOR;
+"!" return tNOT;
 "=" return tAFFECT;
 "+" return tPLUS;
 "-" return tMINUS;

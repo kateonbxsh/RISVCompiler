@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-static instruction_t* i_op(opcode_t opcode) {
+instruction_t* i_op(opcode_t opcode) {
     instruction_t* instruction = malloc(sizeof(instruction_t));
     if (!instruction) {
         return NULL;
@@ -47,7 +47,7 @@ instruction_t* i_op3(opcode_t opcode, argument_t a1, argument_t a2, argument_t a
     return instruction;
 }
 
-static const char* opcode_name(opcode_t opcode) {
+const char* opcode_name(opcode_t opcode) {
     switch(opcode) {
         case OP_NOP: return "NOP";
         case OP_AFC: return "AFC";
@@ -81,6 +81,36 @@ static const char* opcode_name(opcode_t opcode) {
     return "UNKNOWN";
 }
 
+void print_register(FILE* out, long reg) {
+    fprintf(out, "r%ld", reg);
+}
+
+void print_hex(FILE* out, long value) {
+    if (value < 0) {
+        fprintf(out, "-0x%lX", -value);
+    } else {
+        fprintf(out, "0x%lX", value);
+    }
+}
+
+void print_binary_register_instruction(FILE* out, const char* name, instruction_t* instruction) {
+    fprintf(out, "%s ", name);
+    print_register(out, instruction->arguments[0].value);
+    fprintf(out, " ");
+    print_register(out, instruction->arguments[1].value);
+    fprintf(out, "\n");
+}
+
+void print_ternary_register_instruction(FILE* out, const char* name, instruction_t* instruction) {
+    fprintf(out, "%s ", name);
+    print_register(out, instruction->arguments[0].value);
+    fprintf(out, " ");
+    print_register(out, instruction->arguments[1].value);
+    fprintf(out, " ");
+    print_register(out, instruction->arguments[2].value);
+    fprintf(out, "\n");
+}
+
 void instruction_write(FILE* out, instruction_t* instruction) {
     const char* name = opcode_name(instruction->opcode);
 
@@ -101,31 +131,60 @@ void instruction_write(FILE* out, instruction_t* instruction) {
         case OP_LEQ:
         case OP_GEQ:
         case OP_NEQ:
-            fprintf(out, "%s %ld %ld %ld\n", name,
-                instruction->arguments[0].value,
-                instruction->arguments[1].value,
-                instruction->arguments[2].value);
+            print_ternary_register_instruction(out, name, instruction);
             break;
 
-        case OP_AFC:
         case OP_COP:
         case OP_NOT:
         case OP_BNOT:
-        case OP_LOAD:
-        case OP_STORE:
         case OP_LOADR:
         case OP_STORER:
+            print_binary_register_instruction(out, name, instruction);
+            break;
+
+        case OP_AFC:
+            fprintf(out, "%s ", name);
+            print_register(out, instruction->arguments[0].value);
+            fprintf(out, " ");
+            print_hex(out, instruction->arguments[1].value);
+            fprintf(out, "\n");
+            break;
+
+        case OP_LOAD:
+            fprintf(out, "%s ", name);
+            print_register(out, instruction->arguments[0].value);
+            fprintf(out, " ");
+            print_hex(out, instruction->arguments[1].value);
+            fprintf(out, "\n");
+            break;
+
+        case OP_STORE:
+            fprintf(out, "%s ", name);
+            print_hex(out, instruction->arguments[0].value);
+            fprintf(out, " ");
+            print_register(out, instruction->arguments[1].value);
+            fprintf(out, "\n");
+            break;
+
         case OP_JMF:
-            fprintf(out, "%s %ld %ld\n", name,
-                instruction->arguments[0].value,
-                instruction->arguments[1].value);
+            fprintf(out, "%s ", name);
+            print_register(out, instruction->arguments[0].value);
+            fprintf(out, " ");
+            print_hex(out, instruction->arguments[1].value);
+            fprintf(out, "\n");
             break;
 
         case OP_JMP:
+            fprintf(out, "%s ", name);
+            print_hex(out, instruction->arguments[0].value);
+            fprintf(out, "\n");
+            break;
+
         case OP_JMPR:
         case OP_PRI:
-            fprintf(out, "%s %ld\n", name,
-                instruction->arguments[0].value);
+            fprintf(out, "%s ", name);
+            print_register(out, instruction->arguments[0].value);
+            fprintf(out, "\n");
             break;
 
         case OP_NOP:

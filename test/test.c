@@ -4,7 +4,11 @@ main {
     int b = 5;
 
     while (a + 6 + 7) {
-        b = b + 1;
+        if (a + 1) {
+            b = b - 1;
+        } else {
+            b = b + 1;
+        }
     }
     
 }

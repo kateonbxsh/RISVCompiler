@@ -75,6 +75,28 @@ long emit_unary_expression(opcode_t opcode, long reg) {
     return reg;
 }
 
+long emit_address_of(char* name) {
+    int reg = register_alloc();
+    int memory_address = symbol_get_address(codegen_symbol_table, name);
+
+    emit2(OP_AFC, reg, memory_address);
+    register_mark_dirty(reg);
+    return reg;
+}
+
+long emit_pointer_load(long address_register) {
+    emit2(OP_LOADR, address_register, address_register);
+    register_mark_dirty(address_register);
+    return address_register;
+}
+
+void emit_pointer_assignment(long address_register, long value_register) {
+    emit2(OP_STORER, address_register, value_register);
+    register_free(address_register);
+    register_free(value_register);
+    codegen_reset_registers();
+}
+
 void emit_variable_declaration(char* name, long expression_register) {
     long variable_address = symbol_table_add(codegen_symbol_table, name);
 

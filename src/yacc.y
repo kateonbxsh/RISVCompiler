@@ -13,15 +13,16 @@ scope_t* current_scope;
 
 %}
 %union { long nb; char* name; }
-%token tINT
+%token tLET
 %token tMAIN tPRINTF tCONST tERROR tIF tELSE tWHILE
 %token <nb> tNUMBER
 %token <name> tIDENTIFIER
 %token tEQUALS tNEQ tPLUS tMINUS tTIMES tDIVIDE tGT tLT tGEQ tLEQ
-%token tNOT tAND tOR
+%token tNOT tAND tOR tADDRESS
 %token tLEFTPAREN tRIGHTPAREN tLEFTBRACE tRIGHTBRACE tSEMICOLON tCOMMA tAFFECT
 
 %type <nb> Expression
+%type <nb> PointerTarget PointerOperand
 %type <nb> IfCondition SingleIfStatement Block TakenIfStatement IfStatement
 
 %left tOR
@@ -29,7 +30,7 @@ scope_t* current_scope;
 %left tEQUALS tNEQ tGT tLT tGEQ tLEQ
 %left tPLUS tMINUS
 %left tTIMES tDIVIDE
-%right tNOT
+%right tNOT tADDRESS tDEREF
 
 %start Program
 %%
@@ -47,24 +48,37 @@ Expression : Expression tOR Expression { $$ = emit_binary_expression(OP_OR, $1, 
            | Expression tTIMES Expression { $$ = emit_binary_expression(OP_MUL, $1, $3); }
            | Expression tPLUS Expression { $$ = emit_binary_expression(OP_ADD, $1, $3); }
            | tNOT Expression { $$ = emit_unary_expression(OP_NOT, $2); }
+           | tADDRESS tIDENTIFIER { $$ = emit_address_of($2); }
+           | tTIMES Expression %prec tDEREF { $$ = emit_pointer_load($2); }
            | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
            | tNUMBER {
                 $$ = emit_number($1);
             }
            | tIDENTIFIER { $$ = emit_identifier($1); };
 
+PointerTarget : tTIMES PointerOperand %prec tDEREF { $$ = $2; };
+
+PointerOperand : tIDENTIFIER { $$ = emit_identifier($1); }
+               | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
+               | tTIMES PointerOperand %prec tDEREF { $$ = emit_pointer_load($2); };
+
 MultivariableDeclaration : tIDENTIFIER tCOMMA MultivariableDeclaration { symbol_table_add(&symbol_table, $1); }
                            | tIDENTIFIER { symbol_table_add(&symbol_table, $1); };
 
-VarDeclaration : tINT tIDENTIFIER tAFFECT Expression tSEMICOLON
+VarDeclaration : tLET tIDENTIFIER tAFFECT Expression tSEMICOLON
                 { 
                     emit_variable_declaration($2, $4);
                 }
-                | tINT MultivariableDeclaration tSEMICOLON;
+                | tLET MultivariableDeclaration tSEMICOLON;
 
 VarAffectation : tIDENTIFIER tAFFECT Expression tSEMICOLON
                 { 
                     emit_variable_assignment($1, $3);
+                };
+
+PointerAffectation : PointerTarget tAFFECT Expression tSEMICOLON
+                {
+                    emit_pointer_assignment($1, $3);
                 };
 
 Printf : tPRINTF tLEFTPAREN Expression tRIGHTPAREN tSEMICOLON
@@ -117,6 +131,7 @@ Statement
     : Block
     | VarDeclaration
     | VarAffectation
+    | PointerAffectation
     | Printf
     | IfStatement
     | WhileStatement

@@ -8,7 +8,7 @@
 %option noyywrap
 
 %%
-int return tINT;
+let return tLET;
 main return tMAIN;
 printf return tPRINTF;
 if return tIF;
@@ -22,6 +22,7 @@ true|false { yylval.nb = strcmp(yytext, "true") == 0 ? 1 : 0; return tNUMBER; }
 "!=" return tNEQ;
 "&&" return tAND;
 "||" return tOR;
+"&" return tADDRESS;
 "!" return tNOT;
 "=" return tAFFECT;
 "+" return tPLUS;

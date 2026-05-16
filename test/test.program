@@ -1,0 +1,7 @@
+main { 
+    let a = 5; 
+    let p; 
+    p = &a; 
+    *p = 7; 
+    printf(a); 
+}

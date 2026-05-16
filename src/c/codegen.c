@@ -1,11 +1,29 @@
 #include "codegen.h"
+#include "functions.h"
 #include "registers.h"
+
+#include <stdio.h>
 
 symbol_table_t* codegen_symbol_table;
 scope_t** codegen_current_scope;
+instruction_t* main_jump;
+int next_return_save_address;
+long current_function_body_start_address;
 
 scope_t* scope() {
     return *codegen_current_scope;
+}
+
+long current_program_address() {
+    long address = 0;
+    scope_t* current = scope();
+
+    while (current) {
+        address += current->instruction_count;
+        current = current->parent;
+    }
+
+    return address;
 }
 
 argument_t arg_value(long value) {
@@ -34,11 +52,83 @@ instruction_t* emit3(opcode_t opcode, long a1, long a2, long a3) {
 void codegen_init(symbol_table_t* symbols, scope_t** scope) {
     codegen_symbol_table = symbols;
     codegen_current_scope = scope;
+    next_return_save_address = 240;
+    registers_init();
+    function_table_init();
+}
+
+void codegen_reset_registers() {
     registers_init();
 }
 
-void codegen_reset_registers(void) {
-    registers_init();
+instruction_t* emit_label() {
+    instruction_t* label = i_op1(OP_NOP, arg_value(0));
+    scope_add_instruction(scope(), label);
+    return label;
+}
+
+void emit_program_start() {
+    main_jump = i_op1(OP_JMP, (argument_t){ .instruction = NULL });
+    main_jump->relative = 0;
+    scope_add_instruction(scope(), main_jump);
+    codegen_reset_registers();
+}
+
+void begin_main_method() {
+    instruction_t* main_entry = emit_label();
+    instruction_set_comment(main_entry, "main");
+    main_jump->arguments[0].instruction = main_entry;
+    codegen_reset_registers();
+}
+
+void begin_function_definition(char* name) {
+    char comment[128];
+    instruction_t* entry = emit_label();
+
+    snprintf(comment, sizeof(comment), "function %s", name);
+    instruction_set_comment(entry, comment);
+    function_add(name, entry);
+    current_function_body_start_address = current_program_address();
+    codegen_reset_registers();
+}
+
+void end_function_definition() {
+    if (current_program_address() == current_function_body_start_address) {
+        emit2(OP_AFC, REG_RETURN, 0);
+        emit1(OP_JMPR, REG_RA);
+    }
+
+    codegen_reset_registers();
+}
+
+void emit_return(long expression_register) {
+    emit2(OP_COP, REG_RETURN, expression_register);
+    register_free(expression_register);
+    emit1(OP_JMPR, REG_RA);
+    codegen_reset_registers();
+}
+
+long emit_function_call(char* name) {
+    instruction_t* entry = function_get_entry(name);
+    long return_save_address = next_return_save_address++;
+    long return_address = current_program_address() + 3;
+    int result_register;
+
+    emit2(OP_STORE, return_save_address, REG_RA);
+    emit2(OP_AFC, REG_RA, return_address);
+
+    instruction_t* jmp = i_op1(OP_JMP, (argument_t){ .instruction = entry });
+    jmp->relative = 0;
+    scope_add_instruction(scope(), jmp);
+
+    emit_label();
+    codegen_reset_registers();
+    emit2(OP_LOAD, REG_RA, return_save_address);
+
+    result_register = register_alloc();
+    emit2(OP_COP, result_register, REG_RETURN);
+    register_mark_dirty(result_register);
+    return result_register;
 }
 
 long emit_number(long value) {
@@ -128,7 +218,7 @@ instruction_t* emit_jmf_placeholder(long condition_register) {
     return jmf;
 }
 
-instruction_t* emit_jmp_placeholder(void) {
+instruction_t* emit_jmp_placeholder() {
     instruction_t* jmp = emit1(OP_JMP, 0);
     jmp->relative = 1;
     codegen_reset_registers();

@@ -1,7 +1,7 @@
+function test() {
+    return 0;
+}
+
 main { 
-    let a = 5; 
-    let p; 
-    p = &a; 
-    *p = 7; 
-    printf(a); 
+    let a = test();
 }

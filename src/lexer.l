@@ -9,6 +9,8 @@
 
 %%
 let return tLET;
+function return tFUNCTION;
+return return tRETURN;
 main return tMAIN;
 printf return tPRINTF;
 if return tIF;

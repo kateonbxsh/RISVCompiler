@@ -18,8 +18,8 @@ typedef struct {
     int dirty;
 } register_descriptor_t;
 
-void registers_init(void);
-int register_alloc(void);
+void registers_init();
+int register_alloc();
 void register_free(int reg);
 int register_is_general(int reg);
 int register_is_dirty(int reg);

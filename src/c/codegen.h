@@ -7,6 +7,13 @@
 void codegen_init(symbol_table_t* symbols, scope_t** scope);
 void codegen_reset_registers(void);
 
+void emit_program_start(void);
+void begin_main_method(void);
+void begin_function_definition(char* name);
+void end_function_definition(void);
+void emit_return(long expression_register);
+long emit_function_call(char* name);
+
 long emit_number(long value);
 long emit_identifier(char* name);
 long emit_binary_expression(opcode_t opcode, long left, long right);

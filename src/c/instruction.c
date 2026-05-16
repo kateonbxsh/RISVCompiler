@@ -1,6 +1,10 @@
 #include "instruction.h"
 
 #include <stdlib.h>
+#include <string.h>
+#include "registers.h"
+
+void print_instruction_end(FILE* out, instruction_t* instruction);
 
 instruction_t* i_op(opcode_t opcode) {
     instruction_t* instruction = malloc(sizeof(instruction_t));
@@ -10,6 +14,7 @@ instruction_t* i_op(opcode_t opcode) {
 
     instruction->opcode = opcode;
     instruction->relative = 0;
+    instruction->comment = NULL;
     instruction->next = NULL;
     return instruction;
 }
@@ -63,12 +68,12 @@ const char* opcode_name(opcode_t opcode) {
         case OP_BAND: return "BAND";
         case OP_BOR: return "BOR";
         case OP_LOAD: return "LOAD";
-        case OP_STORE: return "STORE";
-        case OP_LOADR: return "LOADR";
-        case OP_STORER: return "STORER";
-        case OP_JMP: return "JMP";
-        case OP_JMF: return "JMF";
-        case OP_JMPR: return "JMPR";
+        case OP_STORE: return "STR";
+        case OP_LOADR: return "LDI";
+        case OP_STORER: return "STI";
+        case OP_JMP: return "J";
+        case OP_JMF: return "JF";
+        case OP_JMPR: return "JI";
         case OP_LT: return "LT";
         case OP_GT: return "GT";
         case OP_EQ: return "EQ";
@@ -82,7 +87,21 @@ const char* opcode_name(opcode_t opcode) {
 }
 
 void print_register(FILE* out, long reg) {
-    fprintf(out, "r%ld", reg);
+    if (register_is_general(reg)) {
+        fprintf(out, "r%ld", reg);
+        return;
+    }
+    switch(reg) {
+        case REG_SP:
+            fprintf(out, "sp");
+            break;
+        case REG_FP:
+            fprintf(out, "fp");
+            break;
+        case REG_RA:
+            fprintf(out, "ra");
+            break;
+    }
 }
 
 void print_hex(FILE* out, long value) {
@@ -98,7 +117,7 @@ void print_binary_register_instruction(FILE* out, const char* name, instruction_
     print_register(out, instruction->arguments[0].value);
     fprintf(out, " ");
     print_register(out, instruction->arguments[1].value);
-    fprintf(out, "\n");
+    print_instruction_end(out, instruction);
 }
 
 void print_ternary_register_instruction(FILE* out, const char* name, instruction_t* instruction) {
@@ -108,13 +127,21 @@ void print_ternary_register_instruction(FILE* out, const char* name, instruction
     print_register(out, instruction->arguments[1].value);
     fprintf(out, " ");
     print_register(out, instruction->arguments[2].value);
+    print_instruction_end(out, instruction);
+}
+
+void print_instruction_end(FILE* out, instruction_t* instruction) {
+    if (instruction->comment) {
+        fprintf(out, "          %% %s", instruction->comment);
+    }
+
     fprintf(out, "\n");
 }
 
 void instruction_write(FILE* out, instruction_t* instruction) {
     const char* name = opcode_name(instruction->opcode);
 
-    fprintf(out, "0x%02X: ", instruction->address);
+    fprintf(out, "0x%04X:  ", instruction->address);
 
     switch(instruction->opcode) {
         case OP_ADD:
@@ -147,7 +174,7 @@ void instruction_write(FILE* out, instruction_t* instruction) {
             print_register(out, instruction->arguments[0].value);
             fprintf(out, " ");
             print_hex(out, instruction->arguments[1].value);
-            fprintf(out, "\n");
+            print_instruction_end(out, instruction);
             break;
 
         case OP_LOAD:
@@ -155,7 +182,7 @@ void instruction_write(FILE* out, instruction_t* instruction) {
             print_register(out, instruction->arguments[0].value);
             fprintf(out, " ");
             print_hex(out, instruction->arguments[1].value);
-            fprintf(out, "\n");
+            print_instruction_end(out, instruction);
             break;
 
         case OP_STORE:
@@ -163,7 +190,7 @@ void instruction_write(FILE* out, instruction_t* instruction) {
             print_hex(out, instruction->arguments[0].value);
             fprintf(out, " ");
             print_register(out, instruction->arguments[1].value);
-            fprintf(out, "\n");
+            print_instruction_end(out, instruction);
             break;
 
         case OP_JMF:
@@ -171,24 +198,31 @@ void instruction_write(FILE* out, instruction_t* instruction) {
             print_register(out, instruction->arguments[0].value);
             fprintf(out, " ");
             print_hex(out, instruction->arguments[1].value);
-            fprintf(out, "\n");
+            print_instruction_end(out, instruction);
             break;
 
         case OP_JMP:
             fprintf(out, "%s ", name);
             print_hex(out, instruction->arguments[0].value);
-            fprintf(out, "\n");
+            print_instruction_end(out, instruction);
             break;
 
         case OP_JMPR:
         case OP_PRI:
             fprintf(out, "%s ", name);
             print_register(out, instruction->arguments[0].value);
-            fprintf(out, "\n");
+            print_instruction_end(out, instruction);
             break;
 
         case OP_NOP:
-            fprintf(out, "%s\n", name);
+            fprintf(out, "%s", name);
+            print_instruction_end(out, instruction);
             break;
+    }
+}
+
+void instruction_set_comment(instruction_t* instruction, const char* comment) {
+    if (instruction) {
+        instruction->comment = strdup(comment);
     }
 }

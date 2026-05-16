@@ -14,7 +14,7 @@ scope_t* current_scope;
 %}
 %union { long nb; char* name; }
 %token tLET
-%token tMAIN tPRINTF tCONST tERROR tIF tELSE tWHILE
+%token tMAIN tFUNCTION tRETURN tPRINTF tCONST tERROR tIF tELSE tWHILE
 %token <nb> tNUMBER
 %token <name> tIDENTIFIER
 %token tEQUALS tNEQ tPLUS tMINUS tTIMES tDIVIDE tGT tLT tGEQ tLEQ
@@ -51,6 +51,7 @@ Expression : Expression tOR Expression { $$ = emit_binary_expression(OP_OR, $1, 
            | tADDRESS tIDENTIFIER { $$ = emit_address_of($2); }
            | tTIMES Expression %prec tDEREF { $$ = emit_pointer_load($2); }
            | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
+           | tIDENTIFIER tLEFTPAREN tRIGHTPAREN { $$ = emit_function_call($1); }
            | tNUMBER {
                 $$ = emit_number($1);
             }
@@ -79,6 +80,11 @@ VarAffectation : tIDENTIFIER tAFFECT Expression tSEMICOLON
 PointerAffectation : PointerTarget tAFFECT Expression tSEMICOLON
                 {
                     emit_pointer_assignment($1, $3);
+                };
+
+ReturnStatement : tRETURN Expression tSEMICOLON
+                {
+                    emit_return($2);
                 };
 
 Printf : tPRINTF tLEFTPAREN Expression tRIGHTPAREN tSEMICOLON
@@ -132,12 +138,16 @@ Statement
     | VarDeclaration
     | VarAffectation
     | PointerAffectation
+    | ReturnStatement
     | Printf
     | IfStatement
     | WhileStatement
 ;
 
-StatementList : Statement | Statement StatementList;
+StatementList
+    :
+    | Statement StatementList
+;
 
 Block: tLEFTBRACE
       {
@@ -150,11 +160,36 @@ Block: tLEFTBRACE
       }
 ;
 
-MainMethod : tMAIN Block {
+FunctionList
+    :
+    | FunctionList FunctionDefinition
+;
+
+FunctionDefinition : tFUNCTION tIDENTIFIER tLEFTPAREN tRIGHTPAREN
+    {
+        begin_function_definition($2);
+    }
+    Block
+    {
+        end_function_definition();
+    }
+;
+
+ProgramStart :
+    {
+        emit_program_start();
+    }
+;
+
+MainMethod : tMAIN
+    {
+        begin_main_method();
+    }
+    Block {
     end_main_method();
 } ;
 
-Program : MainMethod { printf("found main\n"); };
+Program : ProgramStart FunctionList MainMethod { printf("found main\n"); };
 
 %%
 void yyerror(char *s) { fprintf(stderr, "%s\n", s); }

@@ -8,7 +8,7 @@ run_lex: build_lex
 	build/lexer
 
 test_lex: build_lex
-	cat test/test.c | build/lexer
+	cat test/test.program | build/lexer
 
 genh:
 	yacc -Wcounterexamples -o intermediate/y.tab.h -d src/yacc.y
@@ -19,14 +19,11 @@ build_yacc: genh genlex
 	gcc -o build/yacc intermediate/*.c 
 
 run_yacc: build_yacc
-	build/yacc 
+	build/yacc
 
 test_yacc_nobuild:
-	cat test/test.c | build/yacc 
+	cat test/test.program | build/yacc
 
 test_yacc: build_yacc
-	cat test/test.c | build/yacc
+	cat test/test.program | build/yacc
 
-
-
-	

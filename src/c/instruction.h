@@ -50,6 +50,7 @@ typedef struct instr {
     argument_t arguments[3];
     int address;
     int relative;
+    char* comment;
 
     struct instr* next;
 } instruction_t;
@@ -59,5 +60,6 @@ instruction_t* i_op2(opcode_t opcode, argument_t a1, argument_t a2);
 instruction_t* i_op3(opcode_t opcode, argument_t a1, argument_t a2, argument_t a3);
 
 void instruction_write(FILE* out, instruction_t* instruction);
+void instruction_set_comment(instruction_t* instruction, const char* comment);
 
 #endif

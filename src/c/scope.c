@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+// initialize a scope
 scope_t* scope_init() {
     scope_t* scope = malloc(sizeof(scope_t));
     if (!scope) {
@@ -16,6 +17,7 @@ scope_t* scope_init() {
     return scope;
 }
 
+// initializes a child scope inside a scope, this happens whenever we enter a block (delimited with brackets)
 scope_t* scope_init_child(scope_t* parent, int symbol_base) {
     scope_t* scope = scope_init();
     if (!scope) {
@@ -27,6 +29,7 @@ scope_t* scope_init_child(scope_t* parent, int symbol_base) {
     return scope;
 }
 
+// adds an instruction object to the scope
 void scope_add_instruction(scope_t* scope, instruction_t* instr) {
     if (!scope || !instr) {
         return;
@@ -44,6 +47,7 @@ void scope_add_instruction(scope_t* scope, instruction_t* instr) {
     scope->instruction_count++;
 }
 
+// this method "flushes" a scope, which takes all the scope's instructions, and appends them to the parent's, and frees the scope object
 scope_t* scope_flush(scope_t* scope) {
     if (!scope) {
         return NULL;
@@ -69,6 +73,13 @@ scope_t* scope_flush(scope_t* scope) {
     return parent;
 }
 
+/*
+    after the program is fully compiled, all JMP instructions still reference either
+    a relative offset, or point to another instruction
+    this function firstly goes over all instructions, and defines their instruction address
+    then goes over all JMP and JMF instructions, and converts those references
+    into a instruction address
+*/
 void scope_resolve_references(scope_t* scope) {
     instruction_t* current = scope->instruction_list;
     int program_counter = 0;
@@ -100,6 +111,7 @@ void scope_resolve_references(scope_t* scope) {
     }
 }
 
+// write every instruction from a scope into the assembly output file
 void scope_write_instructions(FILE* file, scope_t* scope) {
     if (!scope) {
         return;

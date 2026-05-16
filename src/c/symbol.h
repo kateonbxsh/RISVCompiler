@@ -17,6 +17,7 @@ typedef struct {
 
     symbol_t table[256];
     int symbol_size;
+    int next_global_address;
     int temp_symbol_size;
 
 } symbol_table_t;

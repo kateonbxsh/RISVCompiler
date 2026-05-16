@@ -13,23 +13,29 @@
 #define REG_LAST_GENERAL 11
 #define REG_NO_MEMORY -1
 
+/*
+the descriptor for a register
+`in_use` is whether the register is in use for a computation
+`temporary` is whether the register holds a value for a computation, if `memory_address != REG_NO_MEMORY` and `temporary == true` that tells the compiler that the register to not treat this as
+a clean cached value from the memory
+*/
 typedef struct {
-    int used;
+    int in_use;
     int memory_address;
-    int dirty;
+    int temporary;
 } register_descriptor_t;
 
 void registers_init();
 int register_alloc();
 void register_free(int reg);
 int register_is_general(int reg);
-int register_is_dirty(int reg);
+int register_is_temporary(int reg);
 int register_memory_address(int reg);
 
 int register_find_memory(int memory_address);
 void register_bind_memory(int reg, int memory_address);
 void register_forget_memory(int memory_address);
 void register_clear_memory(int reg);
-void register_mark_dirty(int reg);
+void register_mark_temporary(int reg);
 
 #endif

@@ -5,6 +5,18 @@
 
 #include "instruction.h"
 
+/*
+    this scope structure was made to make
+    "scopes" inside the code well represented
+    especially for loops and if statements, to know exactly how many
+    instructions inside a scope (block delimited with brackets {})
+
+    `instruction_list` is the linked list of instructions inside the scope
+    `last` is the last of them :) lol
+    `symbol_table_base` is the last index of the symbol table before the scope, so that once we leave the scope, we can forget all the variables defined after this base
+    `parent` is the parent
+
+*/
 typedef struct scope {
     instruction_t* instruction_list;
     instruction_t* last;
@@ -13,7 +25,7 @@ typedef struct scope {
     struct scope* parent;
 } scope_t;
 
-scope_t* scope_init(void);
+scope_t* scope_init();
 scope_t* scope_init_child(scope_t* parent, int symbol_base);
 scope_t* scope_flush(scope_t* scope);
 

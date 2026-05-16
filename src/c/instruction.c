@@ -6,6 +6,7 @@
 
 void print_instruction_end(FILE* out, instruction_t* instruction);
 
+// create a new instruction with only its opcode initialized
 instruction_t* i_op(opcode_t opcode) {
     instruction_t* instruction = malloc(sizeof(instruction_t));
     if (!instruction) {
@@ -19,6 +20,7 @@ instruction_t* i_op(opcode_t opcode) {
     return instruction;
 }
 
+// create an instruction with one argument
 instruction_t* i_op1(opcode_t opcode, argument_t a1) {
     instruction_t* instruction = i_op(opcode);
     if (!instruction) {
@@ -29,6 +31,7 @@ instruction_t* i_op1(opcode_t opcode, argument_t a1) {
     return instruction;
 }
 
+// create an instruction with two arguments
 instruction_t* i_op2(opcode_t opcode, argument_t a1, argument_t a2) {
     instruction_t* instruction = i_op(opcode);
     if (!instruction) {
@@ -40,6 +43,7 @@ instruction_t* i_op2(opcode_t opcode, argument_t a1, argument_t a2) {
     return instruction;
 }
 
+// create an instruction with three arguments
 instruction_t* i_op3(opcode_t opcode, argument_t a1, argument_t a2, argument_t a3) {
     instruction_t* instruction = i_op(opcode);
     if (!instruction) {
@@ -52,6 +56,7 @@ instruction_t* i_op3(opcode_t opcode, argument_t a1, argument_t a2, argument_t a
     return instruction;
 }
 
+// convert an opcode enum value to the assembly name we print
 const char* opcode_name(opcode_t opcode) {
     switch(opcode) {
         case OP_NOP: return "NOP";
@@ -86,6 +91,7 @@ const char* opcode_name(opcode_t opcode) {
     return "UNKNOWN";
 }
 
+// print a register name, including special names like sp, fp, and ra
 void print_register(FILE* out, long reg) {
     if (register_is_general(reg)) {
         fprintf(out, "r%ld", reg);
@@ -110,6 +116,7 @@ void print_register(FILE* out, long reg) {
     }
 }
 
+// print a number in hexadecimal format for the assembly file
 void print_hex(FILE* out, long value) {
     if (value < 0) {
         fprintf(out, "-0x%lX", -value);
@@ -118,6 +125,7 @@ void print_hex(FILE* out, long value) {
     }
 }
 
+// print an instruction that has two register operands
 void print_binary_register_instruction(FILE* out, const char* name, instruction_t* instruction) {
     fprintf(out, "%s ", name);
     print_register(out, instruction->arguments[0].value);
@@ -126,6 +134,7 @@ void print_binary_register_instruction(FILE* out, const char* name, instruction_
     print_instruction_end(out, instruction);
 }
 
+// print an instruction that has three register operands
 void print_ternary_register_instruction(FILE* out, const char* name, instruction_t* instruction) {
     fprintf(out, "%s ", name);
     print_register(out, instruction->arguments[0].value);
@@ -136,6 +145,7 @@ void print_ternary_register_instruction(FILE* out, const char* name, instruction
     print_instruction_end(out, instruction);
 }
 
+// finish the printed instruction line and add a comment when there is one
 void print_instruction_end(FILE* out, instruction_t* instruction) {
     if (instruction->comment) {
         fprintf(out, "          %% %s", instruction->comment);
@@ -144,6 +154,7 @@ void print_instruction_end(FILE* out, instruction_t* instruction) {
     fprintf(out, "\n");
 }
 
+// write one instruction to the output assembly file
 void instruction_write(FILE* out, instruction_t* instruction) {
     const char* name = opcode_name(instruction->opcode);
 
@@ -227,6 +238,7 @@ void instruction_write(FILE* out, instruction_t* instruction) {
     }
 }
 
+// attach a human-readable comment to an instruction
 void instruction_set_comment(instruction_t* instruction, const char* comment) {
     if (instruction) {
         instruction->comment = strdup(comment);

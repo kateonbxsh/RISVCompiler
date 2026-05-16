@@ -165,6 +165,11 @@ FunctionList
     | FunctionList FunctionDefinition
 ;
 
+GlobalDeclarationList
+    :
+    | GlobalDeclarationList VarDeclaration
+;
+
 FunctionDefinition : tFUNCTION tIDENTIFIER tLEFTPAREN tRIGHTPAREN
     {
         begin_function_definition($2);
@@ -189,7 +194,7 @@ MainMethod : tMAIN
     end_main_method();
 } ;
 
-Program : ProgramStart FunctionList MainMethod { printf("found main\n"); };
+Program : GlobalDeclarationList ProgramStart FunctionList MainMethod { printf("found main\n"); };
 
 %%
 void yyerror(char *s) { fprintf(stderr, "%s\n", s); }

@@ -11,7 +11,7 @@ void reserve_register(int reg) {
     registers[reg].dirty = 0;
 }
 
-void registers_init(void) {
+void registers_init() {
     for (int i = 0; i < REGISTER_COUNT; i++) {
         registers[i].used = 0;
         registers[i].memory_address = REG_NO_MEMORY;
@@ -19,6 +19,7 @@ void registers_init(void) {
     }
 
     reserve_register(REG_RETURN);
+    reserve_register(REG_TMP);
     reserve_register(REG_SP);
     reserve_register(REG_FP);
     reserve_register(REG_RA);
@@ -51,7 +52,7 @@ int register_find_memory(int memory_address) {
     return -1;
 }
 
-int register_alloc(void) {
+int register_alloc() {
     for (int reg = REG_FIRST_GENERAL; reg <= REG_LAST_GENERAL; reg++) {
         if (!registers[reg].used) {
             registers[reg].used = 1;

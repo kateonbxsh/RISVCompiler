@@ -92,6 +92,12 @@ void print_register(FILE* out, long reg) {
         return;
     }
     switch(reg) {
+        case REG_RETURN:
+            fprintf(out, "r0");
+            break;
+        case REG_TMP:
+            fprintf(out, "r12");
+            break;
         case REG_SP:
             fprintf(out, "sp");
             break;

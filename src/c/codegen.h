@@ -22,6 +22,7 @@ long emit_address_of(char* name);
 long emit_pointer_load(long address_register);
 void emit_pointer_assignment(long address_register, long value_register);
 void emit_variable_declaration(char* name, long expression_address);
+void emit_empty_variable_declaration(char* name);
 void emit_variable_assignment(char* name, long expression_address);
 void emit_print(long expression_address);
 

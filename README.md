@@ -9,3 +9,6 @@ Register resets are handled inside the codegen control-flow helpers:
 - `while` resets before compiling the condition, so each iteration reloads truth from memory.
 
 This is needed because the register table is only the compiler's guess about what each register contains. In straight-line code, this cache is useful. After branches, loops, jumps, and block exits, control flow may have changed memory in a way the current path cannot know. At that point, memory becomes the source of truth again, so the compiler forgets cached register contents and reloads variables when needed.
+
+Limitations:
+- if in an expression is long enough so that it uses all general registers, it will 

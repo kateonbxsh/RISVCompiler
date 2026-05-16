@@ -63,8 +63,8 @@ PointerOperand : tIDENTIFIER { $$ = emit_identifier($1); }
                | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
                | tTIMES PointerOperand %prec tDEREF { $$ = emit_pointer_load($2); };
 
-MultivariableDeclaration : tIDENTIFIER tCOMMA MultivariableDeclaration { symbol_table_add(&symbol_table, $1); }
-                           | tIDENTIFIER { symbol_table_add(&symbol_table, $1); };
+MultivariableDeclaration : tIDENTIFIER tCOMMA MultivariableDeclaration { emit_empty_variable_declaration($1); }
+                           | tIDENTIFIER { emit_empty_variable_declaration($1); };
 
 VarDeclaration : tLET tIDENTIFIER tAFFECT Expression tSEMICOLON
                 { 

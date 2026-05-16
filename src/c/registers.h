@@ -7,9 +7,10 @@
 #define REG_SP 13 // stack pointer
 #define REG_FP 14 // frame pointer
 #define REG_RA 15 // return address
+#define REG_TMP 12 // compiler scratch register
 
 #define REG_FIRST_GENERAL 1
-#define REG_LAST_GENERAL 12
+#define REG_LAST_GENERAL 11
 #define REG_NO_MEMORY -1
 
 typedef struct {

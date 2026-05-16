@@ -9,6 +9,8 @@ scope_t** codegen_current_scope;
 instruction_t* main_jump;
 int next_return_save_address;
 long current_function_body_start_address;
+int inside_function;
+int next_local_offset;
 
 scope_t* scope() {
     return *codegen_current_scope;
@@ -53,6 +55,8 @@ void codegen_init(symbol_table_t* symbols, scope_t** scope) {
     codegen_symbol_table = symbols;
     codegen_current_scope = scope;
     next_return_save_address = 240;
+    inside_function = 0;
+    next_local_offset = 0;
     registers_init();
     function_table_init();
 }
@@ -67,6 +71,38 @@ instruction_t* emit_label() {
     return label;
 }
 
+void emit_inc_sp() {
+    emit2(OP_AFC, REG_TMP, 1);
+    emit3(OP_ADD, REG_SP, REG_SP, REG_TMP);
+}
+
+void emit_dec_sp() {
+    emit2(OP_AFC, REG_TMP, 1);
+    emit3(OP_SOU, REG_SP, REG_SP, REG_TMP);
+}
+
+void emit_function_prologue() {
+    emit2(OP_STORER, REG_SP, REG_RA);
+    emit_inc_sp();
+    emit2(OP_STORER, REG_SP, REG_FP);
+    emit_inc_sp();
+    emit2(OP_COP, REG_FP, REG_SP);
+}
+
+void emit_function_epilogue() {
+    emit2(OP_COP, REG_SP, REG_FP);
+    emit_dec_sp();
+    emit2(OP_LOADR, REG_FP, REG_SP);
+    emit_dec_sp();
+    emit2(OP_LOADR, REG_RA, REG_SP);
+    emit1(OP_JMPR, REG_RA);
+}
+
+void emit_local_address(int offset) {
+    emit2(OP_AFC, REG_TMP, offset);
+    emit3(OP_ADD, REG_TMP, REG_FP, REG_TMP);
+}
+
 void emit_program_start() {
     main_jump = i_op1(OP_JMP, (argument_t){ .instruction = NULL });
     main_jump->relative = 0;
@@ -78,6 +114,8 @@ void begin_main_method() {
     instruction_t* main_entry = emit_label();
     instruction_set_comment(main_entry, "main");
     main_jump->arguments[0].instruction = main_entry;
+    emit2(OP_AFC, REG_SP, 128);
+    emit2(OP_COP, REG_FP, REG_SP);
     codegen_reset_registers();
 }
 
@@ -88,6 +126,9 @@ void begin_function_definition(char* name) {
     snprintf(comment, sizeof(comment), "function %s", name);
     instruction_set_comment(entry, comment);
     function_add(name, entry);
+    inside_function = 1;
+    next_local_offset = 0;
+    emit_function_prologue();
     current_function_body_start_address = current_program_address();
     codegen_reset_registers();
 }
@@ -95,26 +136,25 @@ void begin_function_definition(char* name) {
 void end_function_definition() {
     if (current_program_address() == current_function_body_start_address) {
         emit2(OP_AFC, REG_RETURN, 0);
-        emit1(OP_JMPR, REG_RA);
+        emit_function_epilogue();
     }
 
+    inside_function = 0;
     codegen_reset_registers();
 }
 
 void emit_return(long expression_register) {
     emit2(OP_COP, REG_RETURN, expression_register);
     register_free(expression_register);
-    emit1(OP_JMPR, REG_RA);
+    emit_function_epilogue();
     codegen_reset_registers();
 }
 
 long emit_function_call(char* name) {
     instruction_t* entry = function_get_entry(name);
-    long return_save_address = next_return_save_address++;
-    long return_address = current_program_address() + 3;
+    long return_address = current_program_address() + 2;
     int result_register;
 
-    emit2(OP_STORE, return_save_address, REG_RA);
     emit2(OP_AFC, REG_RA, return_address);
 
     instruction_t* jmp = i_op1(OP_JMP, (argument_t){ .instruction = entry });
@@ -123,7 +163,6 @@ long emit_function_call(char* name) {
 
     emit_label();
     codegen_reset_registers();
-    emit2(OP_LOAD, REG_RA, return_save_address);
 
     result_register = register_alloc();
     emit2(OP_COP, result_register, REG_RETURN);
@@ -139,8 +178,25 @@ long emit_number(long value) {
 }
 
 long emit_identifier(char* name) {
-    int memory_address = symbol_get_address(codegen_symbol_table, name);
-    int reg = register_find_memory(memory_address);
+    symbol_t* symbol = symbol_get(codegen_symbol_table, name);
+    int memory_address;
+    int reg;
+
+    if (!symbol) {
+        fprintf(stderr, "unknown variable: %s\n", name);
+        return emit_number(0);
+    }
+
+    if (symbol->storage == SYMBOL_LOCAL) {
+        reg = register_alloc();
+        emit_local_address(symbol->offset);
+        emit2(OP_LOADR, reg, REG_TMP);
+        register_mark_dirty(reg);
+        return reg;
+    }
+
+    memory_address = symbol->address;
+    reg = register_find_memory(memory_address);
 
     if (reg != -1) {
         return reg;
@@ -167,9 +223,21 @@ long emit_unary_expression(opcode_t opcode, long reg) {
 
 long emit_address_of(char* name) {
     int reg = register_alloc();
-    int memory_address = symbol_get_address(codegen_symbol_table, name);
+    symbol_t* symbol = symbol_get(codegen_symbol_table, name);
 
-    emit2(OP_AFC, reg, memory_address);
+    if (!symbol) {
+        fprintf(stderr, "unknown variable: %s\n", name);
+        return reg;
+    }
+
+    if (symbol->storage == SYMBOL_LOCAL) {
+        emit2(OP_AFC, reg, symbol->offset);
+        emit3(OP_ADD, reg, REG_FP, reg);
+        register_mark_dirty(reg);
+        return reg;
+    }
+
+    emit2(OP_AFC, reg, symbol->address);
     register_mark_dirty(reg);
     return reg;
 }
@@ -188,7 +256,20 @@ void emit_pointer_assignment(long address_register, long value_register) {
 }
 
 void emit_variable_declaration(char* name, long expression_register) {
-    long variable_address = symbol_table_add(codegen_symbol_table, name);
+    long variable_address;
+
+    if (inside_function) {
+        int offset = next_local_offset++;
+        symbol_table_add_local(codegen_symbol_table, name, offset);
+        emit_local_address(offset);
+        emit2(OP_STORER, REG_TMP, expression_register);
+        emit_inc_sp();
+        register_free(expression_register);
+        codegen_reset_registers();
+        return;
+    }
+
+    variable_address = symbol_table_add(codegen_symbol_table, name);
 
     register_forget_memory(variable_address);
     emit2(OP_STORE, variable_address, expression_register);
@@ -196,8 +277,30 @@ void emit_variable_declaration(char* name, long expression_register) {
     register_free(expression_register);
 }
 
+void emit_empty_variable_declaration(char* name) {
+    int zero_register = emit_number(0);
+    emit_variable_declaration(name, zero_register);
+}
+
 void emit_variable_assignment(char* name, long expression_register) {
-    long variable_address = symbol_get_address(codegen_symbol_table, name);
+    symbol_t* symbol = symbol_get(codegen_symbol_table, name);
+    long variable_address;
+
+    if (!symbol) {
+        fprintf(stderr, "unknown variable: %s\n", name);
+        register_free(expression_register);
+        return;
+    }
+
+    if (symbol->storage == SYMBOL_LOCAL) {
+        emit_local_address(symbol->offset);
+        emit2(OP_STORER, REG_TMP, expression_register);
+        register_free(expression_register);
+        codegen_reset_registers();
+        return;
+    }
+
+    variable_address = symbol->address;
 
     register_forget_memory(variable_address);
     emit2(OP_STORE, variable_address, expression_register);

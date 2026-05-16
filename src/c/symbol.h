@@ -1,10 +1,16 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
+typedef enum {
+    SYMBOL_GLOBAL,
+    SYMBOL_LOCAL
+} symbol_storage_t;
+
 typedef struct {
-
     char* name;
-
+    symbol_storage_t storage;
+    int address;
+    int offset;
 } symbol_t;
 
 typedef struct {
@@ -18,6 +24,8 @@ typedef struct {
 void symbol_table_init(symbol_table_t* table);
 
 int symbol_table_add(symbol_table_t* table, const char* name);
+int symbol_table_add_local(symbol_table_t* table, const char* name, int offset);
+symbol_t* symbol_get(symbol_table_t* table, const char* name);
 int symbol_get_address(symbol_table_t* table, const char* name);
 void symbol_table_restore(symbol_table_t* table, int symbol_size);
 

@@ -1,14 +1,10 @@
 main {
 
-    int a = 1 + 2;
-    int b = 5;
-
-    while (a + 6 + 7) {
-        if (a + 1) {
-            b = b - 1;
-        } else {
-            b = b + 1;
-        }
+    int a = 5;
+    {
+        int a = 6;
+        a = a + 1;
     }
+    a = a + 2;
     
 }

@@ -1,5 +1,5 @@
 #include "symbol.h"
-#include "stdlib.h"
+#include <stdlib.h>
 #include <string.h>
 
 void symbol_table_init(symbol_table_t* table) {
@@ -17,7 +17,7 @@ int symbol_table_add(symbol_table_t* table, const char* name) {
 }
 int symbol_get_address(symbol_table_t* table, const char* name) {
 
-    for(int i = 0; i < table->symbol_size; i++) {
+    for(int i = table->symbol_size - 1; i >= 0; i--) {
         symbol_t isymbol = table->table[i];
         if (strcmp(isymbol.name, name) == 0) {
             return i;
@@ -25,6 +25,13 @@ int symbol_get_address(symbol_table_t* table, const char* name) {
     }
     return -1;
 
+}
+
+void symbol_table_restore(symbol_table_t* table, int symbol_size) {
+    while (table->symbol_size > symbol_size) {
+        free(table->table[--table->symbol_size].name);
+    }
+    table->temp_symbol_size = 0;
 }
 
 int symbol_table_push_temporary(symbol_table_t* table) {

@@ -1,3 +1,6 @@
+#ifndef SYMBOL_H
+#define SYMBOL_H
+
 typedef struct {
 
     char* name;
@@ -16,8 +19,11 @@ void symbol_table_init(symbol_table_t* table);
 
 int symbol_table_add(symbol_table_t* table, const char* name);
 int symbol_get_address(symbol_table_t* table, const char* name);
+void symbol_table_restore(symbol_table_t* table, int symbol_size);
 
 int symbol_table_push_temporary(symbol_table_t* table);
 int symbol_table_pop_temporary(symbol_table_t* table);
 
 int symbol_is_temporary(symbol_table_t* table, int address);
+
+#endif

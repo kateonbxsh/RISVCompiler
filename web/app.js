@@ -51,7 +51,6 @@ const el = {
   pause: document.querySelector("#pause-button"),
   reset: document.querySelector("#reset-button"),
   speed: document.querySelector("#speed-input"),
-  memoryStart: document.querySelector("#memory-start"),
   statePill: document.querySelector("#state-pill"),
   pcPill: document.querySelector("#pc-pill"),
   cyclePill: document.querySelector("#cycle-pill"),
@@ -309,11 +308,11 @@ function pause() {
 }
 
 function pointerNotesForRegister(index, value) {
-  const address = byte(value);
-  if (index === 13) return `stack top -> ${hex(address)}`;
-  if (index === 14) return `frame base -> ${hex(address)}`;
-  if (index === 15) return `return -> ${hex(address)}`;
-  if (state.memory[address] !== 0) return `points ${hex(address)} = ${hex(state.memory[address])}`;
+  if (index === 0) return "return value";
+  if (index === 12) return "temporary";
+  if (index === 13) return "stack pointer";
+  if (index === 14) return "frame pointer";
+  if (index === 15) return "return address";
   return "";
 }
 
@@ -327,27 +326,54 @@ function renderRegisters() {
     cell.innerHTML = `
       <div class="register-name">${regName(index)}</div>
       <div class="register-value">${value}</div>
-      <div class="register-note">${hex(value)} ${pointerNotesForRegister(index, value)}</div>
+      <div class="register-hex">${hex(value)}</div>
+      <div class="register-note">${pointerNotesForRegister(index, value)}</div>
     `;
     el.registers.appendChild(cell);
   });
 }
 
 function renderMemory() {
-  const start = Math.max(0, Math.min(240, Number(el.memoryStart.value) || 0));
-  const pointed = new Set([state.registers[13], state.registers[14], state.registers[15]].map(byte));
-  el.memory.innerHTML = "";
-  for (let address = start; address < Math.min(start + 64, state.memory.length); address += 1) {
-    const cell = document.createElement("div");
-    cell.className = "memory-cell";
-    if (state.memory[address] !== state.previousMemory[address]) cell.classList.add("changed");
-    if (pointed.has(address)) cell.classList.add("pointed");
-    cell.innerHTML = `
+  const stackAddress = byte(state.registers[13]);
+  const frameAddress = byte(state.registers[14]);
+  const lowStart = 0;
+  const highStart = state.memory.length - 32;
+
+  const makeMemoryRow = (address) => {
+    const markers = [];
+    if (address === stackAddress) markers.push("sp");
+    if (address === frameAddress) markers.push("fp");
+
+    const row = document.createElement("div");
+    row.className = "memory-row";
+    if (state.memory[address] !== state.previousMemory[address]) row.classList.add("changed");
+    if (markers.length > 0) row.classList.add("pointed");
+    row.innerHTML = `
+      <span class="memory-marker">${markers.length > 0 ? `${markers.join("/")} ->` : ""}</span>
       <span class="memory-address">${hex(address)}</span>
-      <span class="memory-value">${state.memory[address]}</span>
+      <span class="memory-value">${hex(state.memory[address])}</span>
     `;
-    el.memory.appendChild(cell);
+    return row;
+  };
+
+  el.memory.innerHTML = "";
+
+  const lowColumn = document.createElement("div");
+  lowColumn.className = "memory-column";
+  lowColumn.innerHTML = `<div class="memory-column-title">low</div>`;
+  for (let address = lowStart; address < lowStart + 32; address += 1) {
+    lowColumn.appendChild(makeMemoryRow(address));
   }
+
+  const highColumn = document.createElement("div");
+  highColumn.className = "memory-column";
+  highColumn.innerHTML = `<div class="memory-column-title">high</div>`;
+  for (let address = state.memory.length - 1; address >= highStart; address -= 1) {
+    highColumn.appendChild(makeMemoryRow(address));
+  }
+
+  el.memory.appendChild(lowColumn);
+  el.memory.appendChild(highColumn);
 }
 
 function renderPointers() {
@@ -428,7 +454,6 @@ el.pause.addEventListener("click", () => {
   render();
 });
 el.reset.addEventListener("click", () => resetMachine());
-el.memoryStart.addEventListener("input", renderMemory);
 
 el.file.addEventListener("change", async (event) => {
   const file = event.target.files[0];

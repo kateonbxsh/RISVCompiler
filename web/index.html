@@ -51,29 +51,32 @@
       </div>
 
       <div class="pane side">
-        <div class="title">next</div>
-        <code id="next-instruction">halt</code>
+        <div class="side-block">
+          <div class="title">next</div>
+          <code id="next-instruction">halt</code>
+        </div>
 
-        <div class="title">output</div>
-        <pre id="output-view"></pre>
+        <div class="side-block">
+          <div class="title">output</div>
+          <pre id="output-view"></pre>
+        </div>
 
-        <div class="title">pointers</div>
-        <div id="pointer-list" class="pointer-list"></div>
+        <div class="side-block">
+          <div class="title">pointers</div>
+          <div id="pointer-list" class="pointer-list"></div>
+        </div>
 
-        <div class="stats">
-          <span>printed <b id="print-count">0</b></span>
-          <span>instr <b id="instruction-count">0</b></span>
+        <div class="side-block">
+          <div class="title">stats</div>
+          <div class="stats">
+            <span>printed <b id="print-count">0</b></span>
+            <span>instr <b id="instruction-count">0</b></span>
+          </div>
         </div>
       </div>
 
       <div class="pane memory">
-        <div class="title">
-          memory
-          <label>
-            from
-            <input id="memory-start" type="number" min="0" max="255" value="0">
-          </label>
-        </div>
+        <div class="title">memory</div>
         <div id="memory-grid" class="memory-grid"></div>
       </div>
     </section>

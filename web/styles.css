@@ -46,7 +46,7 @@ button:hover,
 }
 
 .app {
-  width: min(1280px, calc(100% - 16px));
+  width: min(1480px, calc(100% - 16px));
   margin: 8px auto;
 }
 
@@ -89,7 +89,7 @@ h1 {
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 220px;
+  grid-template-columns: minmax(250px, 1.1fr) minmax(240px, 1fr) minmax(250px, 1fr) 360px;
   gap: 8px;
   padding-top: 8px;
 }
@@ -163,14 +163,14 @@ h1 {
 }
 
 .register-cell {
-  min-height: 49px;
-  padding: 6px;
+  min-height: 58px;
+  padding: 7px;
   border-right: 1px solid var(--soft);
   border-bottom: 1px solid var(--soft);
 }
 
 .register-cell.changed,
-.memory-cell.changed {
+.memory-row.changed {
   background: var(--mark);
 }
 
@@ -179,24 +179,54 @@ h1 {
 }
 
 .register-name,
+.register-hex,
 .register-note {
   color: var(--muted);
-  font-size: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.register-name {
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .register-value {
-  margin: 3px 0 1px;
-  font: 700 13px/1.2 "SFMono-Regular", Consolas, monospace;
+  margin: 4px 0 3px;
+  font: 700 14px/1.2 "SFMono-Regular", Consolas, monospace;
+}
+
+.register-hex {
+  font: 10px/1.25 "SFMono-Regular", Consolas, monospace;
+}
+
+.register-note {
+  min-height: 15px;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid var(--soft);
+  color: #555;
+  font-size: 10px;
 }
 
 .side {
-  padding-bottom: 8px;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(260px, 1.2fr) 160px;
 }
 
-.side > code,
+.side-block {
+  min-width: 0;
+  border-right: 1px solid var(--line);
+}
+
+.side-block:last-child {
+  border-right: 0;
+}
+
+.side-block > code,
 #output-view,
 .pointer-list,
 .stats {
@@ -205,7 +235,7 @@ h1 {
   padding: 8px;
 }
 
-.side > code,
+.side-block > code,
 #output-view,
 .pointer-item,
 .stats {
@@ -213,7 +243,9 @@ h1 {
 }
 
 #output-view {
-  min-height: 84px;
+  min-height: 94px;
+  max-height: 130px;
+  overflow: auto;
   white-space: pre-wrap;
 }
 
@@ -234,47 +266,74 @@ h1 {
 }
 
 .memory {
-  grid-column: 1 / -1;
-}
-
-#memory-start {
-  width: 54px;
-  height: 22px;
-  border: 1px solid var(--line);
+  grid-column: 4;
+  grid-row: 1;
 }
 
 .memory-grid {
   display: grid;
-  grid-template-columns: repeat(16, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
+  height: 520px;
+  overflow: auto;
 }
 
-.memory-cell {
-  min-height: 32px;
-  padding: 4px;
-  border-right: 1px solid var(--soft);
+.memory-column {
+  min-width: 0;
+  border-right: 1px solid var(--line);
+}
+
+.memory-column:last-child {
+  border-right: 0;
+}
+
+.memory-column-title {
+  height: 22px;
+  padding: 4px 7px;
   border-bottom: 1px solid var(--soft);
+  color: var(--muted);
+  font: 10px/1.3 "SFMono-Regular", Consolas, monospace;
 }
 
-.memory-cell.pointed {
-  outline: 1px solid #444;
-  outline-offset: -1px;
+.memory-row {
+  min-height: 22px;
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--soft);
+  display: grid;
+  grid-template-columns: 50px 42px 1fr;
+  align-items: center;
+  gap: 5px;
+  font-family: "SFMono-Regular", Consolas, monospace;
 }
 
+.memory-row.pointed {
+  background: #f3f7f3;
+  box-shadow: inset 3px 0 0 #6a9d78;
+}
+
+.memory-marker,
 .memory-address,
 .memory-value {
-  display: block;
   font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.memory-marker {
+  min-height: 14px;
+  color: #2d6b43;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
 }
 
 .memory-address {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .memory-value {
-  margin-top: 2px;
   font-size: 11px;
   font-weight: 700;
+  text-align: right;
 }
 
 @media (max-width: 980px) {
@@ -285,6 +344,23 @@ h1 {
   .side,
   .memory {
     grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .memory-grid {
+    height: 360px;
+  }
+
+  .side {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .side-block:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .side-block:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
   }
 }
 
@@ -301,7 +377,21 @@ h1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .side {
+    display: block;
+  }
+
+  .side-block {
+    border-right: 0;
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .side-block:last-child {
+    border-bottom: 0;
+  }
+
   .memory-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: 360px;
   }
 }

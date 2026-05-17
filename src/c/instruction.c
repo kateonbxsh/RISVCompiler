@@ -64,7 +64,7 @@ const char* opcode_name(opcode_t opcode) {
         case OP_COP: return "COP";
         case OP_ADD: return "ADD";
         case OP_MUL: return "MUL";
-        case OP_SOU: return "SOU";
+        case OP_SUB: return "SOU";
         case OP_DIV: return "DIV";
         case OP_NOT: return "NOT";
         case OP_AND: return "AND";
@@ -119,10 +119,10 @@ void print_register(FILE* out, long reg) {
 // print a number in hexadecimal format for the assembly file
 void print_hex(FILE* out, long value) {
     if (value < 0) {
-        fprintf(out, "-0x%lX", -value);
-    } else {
-        fprintf(out, "0x%lX", value);
+        value = ((value % 256) + 256) % 256;
     }
+
+    fprintf(out, "0x%lX", value);
 }
 
 // print an instruction that has two register operands
@@ -163,7 +163,7 @@ void instruction_write(FILE* out, instruction_t* instruction) {
     switch(instruction->opcode) {
         case OP_ADD:
         case OP_MUL:
-        case OP_SOU:
+        case OP_SUB:
         case OP_DIV:
         case OP_AND:
         case OP_OR:
@@ -262,7 +262,7 @@ void instruction_write_binary(FILE* out, instruction_t* instruction) {
     switch(instruction->opcode) {
         case OP_ADD:
         case OP_MUL:
-        case OP_SOU:
+        case OP_SUB:
         case OP_DIV:
         case OP_AND:
         case OP_OR:

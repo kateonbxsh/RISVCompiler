@@ -5,7 +5,7 @@ COP     Ri    Rj    _     ; Ri = Rj
 
 ADD     Ri    Rj    Rk    ; Ri = Rj + Rk
 MUL     Ri    Rj    Rk    ; Ri = Rj * Rk
-SOU     Ri    Rj    Rk    ; Ri = Rj - Rk
+SUB     Ri    Rj    Rk    ; Ri = Rj - Rk
 DIV     Ri    Rj    Rk    ; Ri = Rj / Rk
 
 NOT     Ri    Rj    _     ; Ri = !Rj

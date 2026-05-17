@@ -45,18 +45,28 @@ Expression : Expression tOR Expression { $$ = code_add_binary_expression(OP_OR, 
            | Expression tEQUALS Expression { $$ = code_add_binary_expression(OP_EQ, $1, $3); }
            | Expression tNEQ Expression { $$ = code_add_binary_expression(OP_NEQ, $1, $3); }
            | Expression tDIVIDE Expression { $$ = code_add_binary_expression(OP_DIV, $1, $3); }
-           | Expression tMINUS Expression { $$ = code_add_binary_expression(OP_SOU, $1, $3); }
+           | Expression tMINUS Expression { $$ = code_add_binary_expression(OP_SUB, $1, $3); }
            | Expression tTIMES Expression { $$ = code_add_binary_expression(OP_MUL, $1, $3); }
            | Expression tPLUS Expression { $$ = code_add_binary_expression(OP_ADD, $1, $3); }
            | tNOT Expression { $$ = code_add_unary_expression(OP_NOT, $2); }
            | tADDRESS tIDENTIFIER { $$ = code_add_variable_address($2); }
            | tTIMES Expression %prec tDEREF { $$ = code_add_pointer_load($2); }
            | tLEFTPAREN Expression tRIGHTPAREN { $$ = $2; }
-           | tIDENTIFIER tLEFTPAREN tRIGHTPAREN { $$ = code_add_function_call($1); }
+           | tIDENTIFIER tLEFTPAREN {
+                code_begin_function_arguments();
+            } ArgumentList tRIGHTPAREN {
+                $$ = code_add_function_call($1);
+            }
            | tNUMBER {
                 $$ = code_add_constant_load($1);
             }
            | tIDENTIFIER { $$ = code_add_variable_load($1); };
+
+ArgumentList :
+             | NonEmptyArgumentList;
+
+NonEmptyArgumentList : Expression { code_add_function_argument($1); }
+                     | NonEmptyArgumentList tCOMMA Expression { code_add_function_argument($3); };
 
 PointerTarget : tTIMES PointerOperand %prec tDEREF { $$ = $2; };
 
@@ -91,6 +101,11 @@ ReturnStatement : tRETURN Expression tSEMICOLON
 Printf : tPRINTF tLEFTPAREN Expression tRIGHTPAREN tSEMICOLON
         { 
             code_add_print_statement($3);
+        };
+
+ExpressionStatement : Expression tSEMICOLON
+        {
+            code_discard_expression($1);
         };
 
 IfCondition: tIF tLEFTPAREN Expression tRIGHTPAREN {
@@ -141,6 +156,7 @@ Statement
     | PointerAffectation
     | ReturnStatement
     | Printf
+    | ExpressionStatement
     | IfStatement
     | WhileStatement
 ;
@@ -171,7 +187,15 @@ GlobalDeclarationList
     | GlobalDeclarationList VarDeclaration
 ;
 
-FunctionDefinition : tFUNCTION tIDENTIFIER tLEFTPAREN tRIGHTPAREN
+ParameterList :
+              | NonEmptyParameterList;
+
+NonEmptyParameterList : tIDENTIFIER { code_add_function_parameter($1); }
+                      | NonEmptyParameterList tCOMMA tIDENTIFIER { code_add_function_parameter($3); };
+
+FunctionDefinition : tFUNCTION tIDENTIFIER tLEFTPAREN {
+        code_clear_function_parameters();
+    } ParameterList tRIGHTPAREN
     {
         begin_function_definition($2);
     }

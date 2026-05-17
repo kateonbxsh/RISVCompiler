@@ -13,7 +13,7 @@ void function_table_init() {
 }
 
 // save the name and first instruction of a function as a NOP
-void function_add(char* name, instruction_t* entry) {
+void function_add(char* name, instruction_t* entry, int parameter_count) {
     if (function_count >= MAX_FUNCTIONS) {
         fprintf(stderr, "too many functions\n");
         exit(1);
@@ -21,6 +21,7 @@ void function_add(char* name, instruction_t* entry) {
 
     function_table[function_count].name = strdup(name);
     function_table[function_count].entry = entry;
+    function_table[function_count].parameter_count = parameter_count;
     function_count++;
 }
 
@@ -29,6 +30,18 @@ instruction_t* function_get_entry(char* name) {
     for (int i = function_count - 1; i >= 0; i--) {
         if (strcmp(function_table[i].name, name) == 0) {
             return function_table[i].entry;
+        }
+    }
+
+    fprintf(stderr, "unknown function: %s\n", name);
+    exit(1);
+}
+
+// find how many arguments a function expects
+int function_get_parameter_count(char* name) {
+    for (int i = function_count - 1; i >= 0; i--) {
+        if (strcmp(function_table[i].name, name) == 0) {
+            return function_table[i].parameter_count;
         }
     }
 

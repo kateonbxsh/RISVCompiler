@@ -8,10 +8,12 @@
 typedef struct {
     char* name;
     instruction_t* entry;
+    int parameter_count;
 } function_t;
 
 void function_table_init();
-void function_add(char* name, instruction_t* entry);
+void function_add(char* name, instruction_t* entry, int parameter_count);
 instruction_t* function_get_entry(char* name);
+int function_get_parameter_count(char* name);
 
 #endif

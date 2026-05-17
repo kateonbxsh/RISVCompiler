@@ -11,6 +11,11 @@ void code_add_program_start();
 void begin_main_method();
 void begin_function_definition(char* name);
 void end_function_definition();
+void code_clear_function_parameters();
+void code_add_function_parameter(char* name);
+void code_begin_function_arguments();
+void code_add_function_argument(long expression_register);
+void code_discard_expression(long expression_register);
 void code_add_return_statement(long expression_register);
 long code_add_function_call(char* name);
 

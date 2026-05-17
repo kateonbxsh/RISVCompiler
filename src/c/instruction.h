@@ -10,7 +10,7 @@ typedef enum {
 
     OP_ADD = 0x03,     // Ri = Rj + Rk
     OP_MUL = 0x04,     // Ri = Rj * Rk
-    OP_SOU = 0x05,     // Ri = Rj - Rk
+    OP_SUB = 0x05,     // Ri = Rj - Rk
     OP_DIV = 0x06,     // Ri = Rj / Rk
 
     OP_NOT = 0x07,     // Ri = !Rj

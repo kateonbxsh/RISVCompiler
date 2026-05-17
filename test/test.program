@@ -1,16 +1,12 @@
-let n = 5;
-
-function fact() {
+function fact(n) {
     if (n == 0) {
         return 1;
     }
-    let x = n;
-    n = n - 1;
-    return x * fact();
+    return n * fact(n - 1);
 }
 
 main { 
     
-    printf(fact());
+    printf(fact(5));
 
 }

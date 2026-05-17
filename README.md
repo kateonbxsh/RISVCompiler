@@ -18,23 +18,25 @@ Limitations:
 
 Function prefix and suffix:
 
-At the beginning of a function, the compiler adds a prefix to save the caller state and create a new stack frame. First, the return address register `ra` is stored at `MEM[sp]`, then `sp` is incremented. Then the old frame pointer `fp` is stored at the new `MEM[sp]`, and `sp` is incremented again. Finally, `fp` is copied from `sp`, so the function has its own frame base. After this, local variables are addressed relative to `fp`.
+At the beginning of a function, the compiler adds a prefix to save the caller state and create a new stack frame. The stack starts at the top of memory and grows downward. First, the return address register `ra` is stored at `MEM[sp]`, then `sp` is decremented. Then the old frame pointer `fp` is stored at the new `MEM[sp]`, and `sp` is decremented again. Finally, `fp` is copied from `sp`, so the function has its own frame base. After this, local variables are addressed relative to `fp`.
 
 ```
 STI sp ra   ; save return address at memory[sp]
-sp++        ; move stack pointer forward
+sp--        ; move stack pointer down
 STI sp fp   ; save old frame pointer at memory[sp]
-sp++        ; move stack pointer forward
+sp--        ; move stack pointer down
 COP fp sp   ; new frame starts here
 ```
 
 ```
 COP sp fp   ; discard local variables, go back to frame base
-sp--        ; move to saved old fp
+sp++        ; move to saved old fp
 LDI fp sp   ; restore caller's fp
-sp--        ; move to saved ra
+sp++        ; move to saved ra
 LDI ra sp   ; restore return address
 JI ra       ; jump back to caller
 ```
 
-At the end of a function, the compiler adds a suffix to restore the caller state. It first copies `fp` back into `sp`, which discards the current function's local variables. Then it decrements `sp` and reloads the old `fp` from memory. It decrements `sp` again and reloads the saved return address into `ra`. Finally, it jumps indirectly to `ra`, returning execution to the caller.
+At the end of a function, the compiler adds a suffix to restore the caller state. It first copies `fp` back into `sp`, which discards the current function's local variables. Then it increments `sp` and reloads the old `fp` from memory. It increments `sp` again and reloads the saved return address into `ra`. Finally, it jumps indirectly to `ra`, returning execution to the caller.
+
+%prec is used in the yacc grammar to manually assign a precedence to a rule. By default, yacc gives a rule the precedence of its last terminal symbol, but this is not always enough when the same token has different meanings. In our grammar, * can mean multiplication or pointer dereference. Multiplication uses the normal tTIMES precedence, while dereference should behave like a unary operator with higher priority. For this reason, the dereference rule is written as tTIMES Expression %prec tDEREF, which tells yacc to use the precedence of the artificial token tDEREF instead of treating it like multiplication. This avoids ambiguity in expressions such as *p + 1 or *p * x.

@@ -253,9 +253,12 @@ unsigned char instruction_binary_c(instruction_t* instruction) {
     return (unsigned char) instruction->arguments[2].value;
 }
 
-// write one instruction as OP A B C bytes
-void instruction_write_binary(FILE* out, instruction_t* instruction) {
-    unsigned char bytes[4] = {0, 0, 0, 0};
+// fill the 4 bytes used by both binary and VHDL outputs
+void instruction_get_binary_bytes(instruction_t* instruction, unsigned char bytes[4]) {
+    bytes[0] = 0;
+    bytes[1] = 0;
+    bytes[2] = 0;
+    bytes[3] = 0;
 
     bytes[0] = (unsigned char) instruction->opcode;
 
@@ -301,8 +304,23 @@ void instruction_write_binary(FILE* out, instruction_t* instruction) {
         case OP_NOP:
             break;
     }
+}
+
+// write one instruction as OP A B C bytes
+void instruction_write_binary(FILE* out, instruction_t* instruction) {
+    unsigned char bytes[4];
+
+    instruction_get_binary_bytes(instruction, bytes);
 
     fwrite(bytes, sizeof(bytes), 1, out);
+}
+
+// write one instruction in a format that can be pasted into a VHDL ROM array
+void instruction_write_vhdl_array(FILE* out, instruction_t* instruction) {
+    unsigned char bytes[4];
+
+    instruction_get_binary_bytes(instruction, bytes);
+    fprintf(out, "x\"%02X%02X%02X%02X\",\n", bytes[0], bytes[1], bytes[2], bytes[3]);
 }
 
 // attach a human-readable comment to an instruction

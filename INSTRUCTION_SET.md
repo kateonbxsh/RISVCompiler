@@ -20,9 +20,9 @@ STR     @i    Rj    _     ; MEM[@i] = Rj
 LDI     Ri    Rj    _     ; Ri = MEM[Rj]
 STI     Ri    Rj    _     ; MEM[Ri] = Rj
 
-J       addr  _     _     ; PC = addr
-JF      Ri    addr  _     ; if Ri == 0, PC = addr
-JI      Ri    _     _     ; PC = Ri
+J       _     addr  _     ; PC = addr
+JF      _     Ri    addr  ; if Ri == 0, PC = addr
+JI      _     Ri    _     ; PC = Ri
 
 LT      Ri    Rj    Rk    ; Ri = Rj < Rk
 GT      Ri    Rj    Rk    ; Ri = Rj > Rk
@@ -31,5 +31,5 @@ LEQ     Ri    Rj    Rk    ; Ri = Rj <= Rk
 GEQ     Ri    Rj    Rk    ; Ri = Rj >= Rk
 NEQ     Ri    Rj    Rk    ; Ri = Rj != Rk
 
-PRI     Ri    _     _     ; print Ri
+PRI     _     Ri   _     ; print Ri
 ```

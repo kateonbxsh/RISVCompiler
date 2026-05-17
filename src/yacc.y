@@ -9,6 +9,7 @@ void yyerror(char *s);
 int yylex(void);
 FILE* out;
 FILE* binary_out;
+FILE* vhdl_out;
 symbol_table_t symbol_table;
 scope_t* current_scope;
 
@@ -240,12 +241,21 @@ int main() {
         fclose(out);
         return 1;
     }
+    vhdl_out = fopen("build/out.vhd", "w+");
+    if (vhdl_out == NULL) {
+        yyerror("Could not write to VHDL array file");
+        fclose(out);
+        fclose(binary_out);
+        return 1;
+    }
     yyparse();
     scope_resolve_references(current_scope);
     scope_write_instructions(out, current_scope);
     scope_write_binary(binary_out, current_scope);
+    scope_write_vhdl_array(vhdl_out, current_scope);
     fclose(out);
     fclose(binary_out);
+    fclose(vhdl_out);
 
     return 0;
 

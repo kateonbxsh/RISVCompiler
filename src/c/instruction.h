@@ -60,7 +60,9 @@ instruction_t* i_op2(opcode_t opcode, argument_t a1, argument_t a2);
 instruction_t* i_op3(opcode_t opcode, argument_t a1, argument_t a2, argument_t a3);
 
 void instruction_write(FILE* out, instruction_t* instruction);
+void instruction_get_binary_bytes(instruction_t* instruction, unsigned char bytes[4]);
 void instruction_write_binary(FILE* out, instruction_t* instruction);
+void instruction_write_vhdl_array(FILE* out, instruction_t* instruction);
 void instruction_set_comment(instruction_t* instruction, const char* comment);
 
 #endif

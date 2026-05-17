@@ -33,5 +33,6 @@ void scope_add_instruction(scope_t* scope, instruction_t* instr);
 void scope_resolve_references(scope_t* scope);
 void scope_write_instructions(FILE* file, scope_t* scope);
 void scope_write_binary(FILE* file, scope_t* scope);
+void scope_write_vhdl_array(FILE* file, scope_t* scope);
 
 #endif

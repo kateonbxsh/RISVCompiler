@@ -14,6 +14,7 @@
     `instruction_list` is the linked list of instructions inside the scope
     `last` is the last of them :) lol
     `symbol_table_base` is the last index of the symbol table before the scope, so that once we leave the scope, we can forget all the variables defined after this base
+    `local_offset_base` is the next local stack offset before the scope, so that leaving the scope can free local stack slots
     `parent` is the parent
 
 */
@@ -21,12 +22,13 @@ typedef struct scope {
     instruction_t* instruction_list;
     instruction_t* last;
     int symbol_table_base;
+    int local_offset_base;
     int instruction_count;
     struct scope* parent;
 } scope_t;
 
 scope_t* scope_init();
-scope_t* scope_init_child(scope_t* parent, int symbol_base);
+scope_t* scope_init_child(scope_t* parent, int symbol_base, int local_offset_base);
 scope_t* scope_flush(scope_t* scope);
 
 void scope_add_instruction(scope_t* scope, instruction_t* instr);

@@ -12,7 +12,7 @@ let return tLET;
 function return tFUNCTION;
 return return tRETURN;
 main return tMAIN;
-printf return tPRINTF;
+print return tPRINTF;
 if return tIF;
 else return tELSE;
 while return tWHILE;

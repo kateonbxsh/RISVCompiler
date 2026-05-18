@@ -69,17 +69,17 @@ void symbol_table_restore(symbol_table_t* table, int symbol_size) {
     table->temp_symbol_size = 0;
 }
 
-// reserve a temporary memory slot from the old memory-based compiler design
+// used in old memory-oriented compiler: reserve a temporary memory slot
 int symbol_table_push_temporary(symbol_table_t* table) {
     return table->symbol_size + table->temp_symbol_size++;
 }
 
-// release the most recent temporary memory slot
+// used in old memory-oriented compiler: release the most recent temporary memory slot
 int symbol_table_pop_temporary(symbol_table_t* table) {
     return table->symbol_size + table->temp_symbol_size--;
 }
 
-// check if an address belongs to the temporary memory area
+// used in old memory-oriented compiler: check if an address belongs to the temporary memory area
 int symbol_is_temporary(symbol_table_t* table, int address) {
     return address >= table->symbol_size && (address < table->symbol_size + table->temp_symbol_size);
 }

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "symbol.h"
 #include "scope.h"
-#include "codegen.h"
+#include "code/code.h"
 
 void yyerror(char *s);
 int yylex(void);

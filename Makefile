@@ -14,7 +14,7 @@ LDFLAGS :=
 
 LEXER_SRC := $(SRC_DIR)/lexer.l
 PARSER_SRC := $(SRC_DIR)/yacc.y
-C_SOURCES := $(wildcard $(C_DIR)/*.c)
+C_SOURCES := $(wildcard $(C_DIR)/*.c) $(wildcard $(C_DIR)/code/*.c)
 
 LEXER_C := $(GEN_DIR)/lexer.yy.c
 PARSER_C := $(GEN_DIR)/y.tab.c

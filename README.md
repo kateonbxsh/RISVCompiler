@@ -1,4 +1,4 @@
-Register resets are handled inside the codegen control-flow helpers:
+Register resets are handled inside the code control-flow helpers:
 
 - `emit_jmf_placeholder()` resets after emitting a conditional branch.
 - `emit_jmp_placeholder()` resets after emitting an unconditional jump.
@@ -11,6 +11,8 @@ Register resets are handled inside the codegen control-flow helpers:
 This is needed because the register table is only the compiler's guess about what each register contains. In straight-line code, this cache is useful. After branches, loops, jumps, and block exits, control flow may have changed memory in a way the current path cannot know. At that point, memory becomes the source of truth again, so the compiler forgets cached register contents and reloads variables when needed.
 
 The current register allocation strategy is intentionally simple: binary expressions reuse the left operand register as the destination register. This keeps expression generation compact, but it can overwrite a clean cached variable value. For example, in b = a + 1, if a is already cached in r1, the compiler may emit ADD r1 r1 r2, replacing a with the result. A smarter allocator could preserve clean variable registers and compute results in another register, allowing later expressions such as c = a + 2 to reuse the cached value of a without reloading it from memory.
+
+Function call arguments are stored as a small stack of argument lists because function calls can be nested. In an expression such as `add(1, mul(2, 3))`, the compiler starts collecting arguments for `add`, then has to temporarily collect another list for `mul` before finishing `add`. The call depth selects which function call is currently being prepared, and the argument index selects which argument inside that call is being stored.
 
 Limitations:
 - if in an expression is long enough so that it uses all general registers, it will give an error

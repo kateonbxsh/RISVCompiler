@@ -1,12 +1,12 @@
-
-
-
-main { 
-    
-    let n = 1;
-    while(n < 5) {
-        printf(n);
-        n = n + 1;
+function fact(n) {
+    if (n == 0) {
+        return 1;
     }
+    return n * fact(n - 1);
+}
+
+main {
+    
+    print(fact(5));
 
 }

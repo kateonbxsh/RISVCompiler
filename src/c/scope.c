@@ -10,6 +10,7 @@ scope_t* scope_init() {
     }
 
     scope->symbol_table_base = 0;
+    scope->local_offset_base = 0;
     scope->instruction_count = 0;
     scope->instruction_list = NULL;
     scope->last = NULL;
@@ -18,13 +19,14 @@ scope_t* scope_init() {
 }
 
 // initializes a child scope inside a scope, this happens whenever we enter a block (delimited with brackets)
-scope_t* scope_init_child(scope_t* parent, int symbol_base) {
+scope_t* scope_init_child(scope_t* parent, int symbol_base, int local_offset_base) {
     scope_t* scope = scope_init();
     if (!scope) {
         return NULL;
     }
 
     scope->symbol_table_base = symbol_base;
+    scope->local_offset_base = local_offset_base;
     scope->parent = parent;
     return scope;
 }

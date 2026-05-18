@@ -1,8 +1,8 @@
-#ifndef CODEGEN_H
-#define CODEGEN_H
+#ifndef CODE_H
+#define CODE_H
 
-#include "scope.h"
-#include "symbol.h"
+#include "../scope.h"
+#include "../symbol.h"
 
 void code_init(symbol_table_t* symbols, scope_t** scope);
 void code_reset_registers();

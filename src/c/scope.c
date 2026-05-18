@@ -95,17 +95,17 @@ void scope_resolve_references(scope_t* scope) {
     while (current) {
         if (current->opcode == OP_JMP) {
             if (current->relative) {
-                current->arguments[0].value = current->address + current->arguments[0].value;
-            } else {
-                instruction_t* addr = current->arguments[0].instruction;
-                current->arguments[0].value = addr ? addr->address : 0;
-            }
-        } else if (current->opcode == OP_JMF) {
-            if (current->relative) {
                 current->arguments[1].value = current->address + current->arguments[1].value;
             } else {
                 instruction_t* addr = current->arguments[1].instruction;
                 current->arguments[1].value = addr ? addr->address : 0;
+            }
+        } else if (current->opcode == OP_JMF) {
+            if (current->relative) {
+                current->arguments[2].value = current->address + current->arguments[2].value;
+            } else {
+                instruction_t* addr = current->arguments[2].instruction;
+                current->arguments[2].value = addr ? addr->address : 0;
             }
         }
 

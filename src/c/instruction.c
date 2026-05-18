@@ -14,6 +14,9 @@ instruction_t* i_op(opcode_t opcode) {
     }
 
     instruction->opcode = opcode;
+    instruction->arguments[0] = (argument_t){ .value = 0 };
+    instruction->arguments[1] = (argument_t){ .value = 0 };
+    instruction->arguments[2] = (argument_t){ .value = 0 };
     instruction->relative = 0;
     instruction->comment = NULL;
     instruction->next = NULL;
@@ -182,8 +185,15 @@ void instruction_write(FILE* out, instruction_t* instruction) {
         case OP_NOT:
         case OP_BNOT:
         case OP_LOADR:
-        case OP_STORER:
             print_binary_register_instruction(out, name, instruction);
+            break;
+
+        case OP_STORER:
+            fprintf(out, "%s ", name);
+            print_register(out, instruction->arguments[1].value);
+            fprintf(out, " ");
+            print_register(out, instruction->arguments[2].value);
+            print_instruction_end(out, instruction);
             break;
 
         case OP_AFC:
@@ -212,22 +222,22 @@ void instruction_write(FILE* out, instruction_t* instruction) {
 
         case OP_JMF:
             fprintf(out, "%s ", name);
-            print_register(out, instruction->arguments[0].value);
+            print_register(out, instruction->arguments[1].value);
             fprintf(out, " ");
-            print_hex(out, instruction->arguments[1].value);
+            print_hex(out, instruction->arguments[2].value);
             print_instruction_end(out, instruction);
             break;
 
         case OP_JMP:
             fprintf(out, "%s ", name);
-            print_hex(out, instruction->arguments[0].value);
+            print_hex(out, instruction->arguments[1].value);
             print_instruction_end(out, instruction);
             break;
 
         case OP_JMPR:
         case OP_PRI:
             fprintf(out, "%s ", name);
-            print_register(out, instruction->arguments[0].value);
+            print_register(out, instruction->arguments[1].value);
             print_instruction_end(out, instruction);
             break;
 
@@ -261,49 +271,9 @@ void instruction_get_binary_bytes(instruction_t* instruction, unsigned char byte
     bytes[3] = 0;
 
     bytes[0] = (unsigned char) instruction->opcode;
-
-    switch(instruction->opcode) {
-        case OP_ADD:
-        case OP_MUL:
-        case OP_SUB:
-        case OP_DIV:
-        case OP_AND:
-        case OP_OR:
-        case OP_BAND:
-        case OP_BOR:
-        case OP_LT:
-        case OP_GT:
-        case OP_EQ:
-        case OP_LEQ:
-        case OP_GEQ:
-        case OP_NEQ:
-            bytes[1] = instruction_binary_a(instruction);
-            bytes[2] = instruction_binary_b(instruction);
-            bytes[3] = instruction_binary_c(instruction);
-            break;
-
-        case OP_COP:
-        case OP_NOT:
-        case OP_BNOT:
-        case OP_LOAD:
-        case OP_STORE:
-        case OP_LOADR:
-        case OP_STORER:
-        case OP_AFC:
-        case OP_JMF:
-            bytes[1] = instruction_binary_a(instruction);
-            bytes[2] = instruction_binary_b(instruction);
-            break;
-
-        case OP_JMP:
-        case OP_JMPR:
-        case OP_PRI:
-            bytes[1] = instruction_binary_a(instruction);
-            break;
-
-        case OP_NOP:
-            break;
-    }
+    bytes[1] = instruction_binary_a(instruction);
+    bytes[2] = instruction_binary_b(instruction);
+    bytes[3] = instruction_binary_c(instruction);
 }
 
 // write one instruction as OP A B C bytes

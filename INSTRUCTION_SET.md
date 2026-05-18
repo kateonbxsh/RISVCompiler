@@ -18,7 +18,7 @@ BOR     Ri    Rj    Rk    ; Ri = Rj | Rk
 LOAD    Ri    @j    _     ; Ri = MEM[@j]
 STR     @i    Rj    _     ; MEM[@i] = Rj
 LDI     Ri    Rj    _     ; Ri = MEM[Rj]
-STI     Ri    Rj    _     ; MEM[Ri] = Rj
+STI     _     Ri    Rj    ; MEM[Ri] = Rj
 
 J       _     addr  _     ; PC = addr
 JF      _     Ri    addr  ; if Ri == 0, PC = addr

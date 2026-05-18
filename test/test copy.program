@@ -1,0 +1,17 @@
+function attack() {
+    let base = 0;
+    let saved_return = &base + 2;
+
+    *saved_return = 41;
+
+    return 0;
+
+    while (true) {
+        print(99);
+    }
+}
+
+main {
+    attack();
+    print(1);
+}

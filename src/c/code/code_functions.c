@@ -71,13 +71,10 @@ void begin_function_definition(char* name) {
     code_reset_registers();
 }
 
-// finish a function definition, adding a default return if the body was empty
+// finish a function definition with a fallback return 0
 void end_function_definition() {
-    if (current_program_address() == current_function_body_start_address) {
-        code_add_2_operand_instruction(OP_AFC, REG_RETURN, 0);
-        code_add_function_suffix();
-    }
-
+    code_add_2_operand_instruction(OP_AFC, REG_RETURN, 0);
+    code_add_function_suffix();
     inside_function = 0;
     code_reset_registers();
 }
@@ -172,7 +169,7 @@ long code_add_function_call(char* name) {
     return_address = current_program_address() + 2;
     code_add_2_operand_instruction(OP_AFC, REG_RA, return_address);
 
-    instruction_t* jmp = i_op1(OP_JMP, (argument_t){ .instruction = entry });
+    instruction_t* jmp = i_op3(OP_JMP, arg_value(0), (argument_t){ .instruction = entry }, arg_value(0));
     jmp->relative = 0;
     scope_add_instruction(scope(), jmp);
 

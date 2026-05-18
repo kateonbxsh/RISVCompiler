@@ -1,12 +1,26 @@
-function fact(n) {
-    if (n == 0) {
-        return 1;
+function attack() {
+    let base = 0;
+    let saved_return = &base + 2;
+
+    *saved_return = 41;
+
+    return 0;
+
+    while (true) {
+        let i = 0;
+        while (i <= 255) {
+            print(99);
+            i=i+1;
+        }
+        i = 0;
+        while (i <= 255) {
+            print(250);
+            i=i+1;
+        }
     }
-    return n * fact(n - 1);
 }
 
 main {
-    
-    print(fact(5));
-
+    attack();
+    print(1);
 }

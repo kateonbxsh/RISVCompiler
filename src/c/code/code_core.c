@@ -38,14 +38,28 @@ argument_t arg_value(long value) {
 
 // add an instruction with one operand into the current scope
 instruction_t* code_add_one_operand_instruction(opcode_t opcode, long a1) {
-    instruction_t* instruction = i_op1(opcode, arg_value(a1));
+    instruction_t* instruction;
+
+    if (opcode == OP_JMP || opcode == OP_JMPR || opcode == OP_PRI) {
+        instruction = i_op3(opcode, arg_value(0), arg_value(a1), arg_value(0));
+    } else {
+        instruction = i_op1(opcode, arg_value(a1));
+    }
+
     scope_add_instruction(scope(), instruction);
     return instruction;
 }
 
 // add an instruction with two operands into the current scope
 instruction_t* code_add_2_operand_instruction(opcode_t opcode, long a1, long a2) {
-    instruction_t* instruction = i_op2(opcode, arg_value(a1), arg_value(a2));
+    instruction_t* instruction;
+
+    if (opcode == OP_JMF || opcode == OP_STORER) {
+        instruction = i_op3(opcode, arg_value(0), arg_value(a1), arg_value(a2));
+    } else {
+        instruction = i_op2(opcode, arg_value(a1), arg_value(a2));
+    }
+
     scope_add_instruction(scope(), instruction);
     return instruction;
 }
@@ -101,7 +115,7 @@ void code_add_compute_local_address(int offset) {
 
 // add the first jump, which skips function definitions and goes to main
 void code_add_program_start() {
-    main_jump = i_op1(OP_JMP, (argument_t){ .instruction = NULL });
+    main_jump = i_op3(OP_JMP, arg_value(0), (argument_t){ .instruction = NULL }, arg_value(0));
     main_jump->relative = 0;
     scope_add_instruction(scope(), main_jump);
     code_reset_registers();
@@ -111,7 +125,7 @@ void code_add_program_start() {
 void begin_main_method() {
     instruction_t* main_entry = code_add_label();
     instruction_set_comment(main_entry, "main");
-    main_jump->arguments[0].instruction = main_entry;
+    main_jump->arguments[1].instruction = main_entry;
     inside_function = 1;
     next_local_offset = 0;
     code_add_2_operand_instruction(OP_AFC, REG_SP, 255);
@@ -159,7 +173,7 @@ instruction_t* first_instruction_after(instruction_t* instruction) {
 
 // add the jump that goes back to the start of a while loop
 void code_add_loop_back_jump(instruction_t* target) {
-    instruction_t* jmp = i_op1(OP_JMP, (argument_t){ .instruction = target });
+    instruction_t* jmp = i_op3(OP_JMP, arg_value(0), (argument_t){ .instruction = target }, arg_value(0));
     jmp->relative = 0;
     scope_add_instruction(scope(), jmp);
     code_reset_registers();

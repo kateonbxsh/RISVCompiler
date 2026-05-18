@@ -163,6 +163,25 @@ function decodeBinary(buffer) {
     const op = OPCODE_NAMES[code];
     if (!op) throw new Error(`Unknown opcode byte: ${hex(code)}`);
     const instruction = { op, code, a: bytes[i + 1], b: bytes[i + 2], c: bytes[i + 3], text: "", comment: "" };
+
+    if (op === "J") {
+      instruction.a = bytes[i + 2];
+      instruction.b = 0;
+      instruction.c = 0;
+    } else if (op === "JF") {
+      instruction.a = bytes[i + 2];
+      instruction.b = bytes[i + 3];
+      instruction.c = 0;
+    } else if (op === "STI") {
+      instruction.a = bytes[i + 2];
+      instruction.b = bytes[i + 3];
+      instruction.c = 0;
+    } else if (["JI", "PRI"].includes(op)) {
+      instruction.a = bytes[i + 2];
+      instruction.b = 0;
+      instruction.c = 0;
+    }
+
     instruction.text = formatInstruction(instruction);
     instructions.push(instruction);
   }

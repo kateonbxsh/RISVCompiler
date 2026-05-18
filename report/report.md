@@ -73,6 +73,12 @@ typedef struct instr {
 ```
 This is very handy, especially since we made helper functions like `i_op1(opcode, a)`, `i_op2(opcode, a, b)`, `i_op3(opcode, a, b, c)` to help us quickly instantiate a `instruction_t` struct and use it later, it is also very useful to output the code in multiple format (text assembly, binary and VHDL array format).
 
+The compiler currently produces three output files:
+
+- `build/out.s`: human-readable assembly, useful for debugging.
+- `build/out.bin`: raw binary instructions for loading into instruction memory.
+- `build/out.vhd`: VHDL ROM array values, written as lines such as `x"010DFF00",`.
+
 The reason we used a `union` for the `argument_t` type is because some instructions have a well known value (like a register index or a memory address) while others (like JMP) might point to an instruction address that was not defined yet, the relevance of this will become more apparent in the next section.
 
 ### `if` and `while`
@@ -85,6 +91,8 @@ typedef struct scope {
     instruction_t* instruction_list;
     instruction_t* last;
     int symbol_table_base;
+    // used later when adding stack frames for local variables
+    int local_offset_base;
     int instruction_count;
     struct scope* parent;
 } scope_t;
@@ -92,6 +100,8 @@ typedef struct scope {
 This representation uses a linked link of scopes, by order of hierarchy (each child points to his parent) which itself references a linked list of instruction blocks.
 
 In the yacc, when entering a block, we call `begin_block()`. This creates a child scope and temporarily makes it the current scope. All instructions produced inside the block are therefore stored separately from the parent scope. When the closing brace is reached, `end_block()` flushes the child scope back into its parent and returns the number of instructions that were inside it.
+
+When entering a block, the compiler also stores the current symbol table size in `symbol_table_base`. Later, when leaving the block, the symbol table is restored to this saved size. This means variables declared inside a block are removed from the compiler symbol table and cannot be used outside the block.
 
 This is useful for `if` because we first generate the condition, then a `JF` instruction with a target that is not known yet:
 
@@ -119,6 +129,18 @@ J condition
 ```
 
 This makes the yacc actions easier to write, because the grammar can parse the body first and patch jump targets only when enough information is known.
+
+### Compiler organization
+
+To keep the compiler readable, the code generation logic was split into several files:
+
+- `yacc.y` contains the grammar and calls the code generation helpers from semantic actions.
+- `code_core.c` contains program initialization, `main`, and block enter/exit logic.
+- `code_expressions.c` contains expression generation, variable assignment, declarations, and pointer operations.
+- `code_functions.c` contains function definitions, function calls, parameters, and stack frame logic.
+- `code_jumps.c` contains jump placeholders and patching helpers.
+- `registers.c` contains the register descriptors and allocation logic.
+- `instruction.c` contains instruction creation, printing, binary encoding, and VHDL array output.
 
 ### Microcontroller
 
@@ -180,11 +202,11 @@ STORE @c r1
 
 As you notice, there is a lot of redundant instructions, on the one hand, we load the value of `a` from memory twice, on the second hand, we store the result of the addition to `tmp`, while we could've directly stored that into `c`.
 
-Of course this highly depends on how the cross-assembler is implemented, it can definitely be optimized to reduce redundancy, but we came to the conclusion that we will never have enough context.
+Of course this highly depends on how the cross-assembler is implemented, it can definitely be optimized to reduce redundancy, but we thought it would be nice to use the context from the compiler directly.
 
 We decided to instead rewrite our compiler as a register-oriented assembler.
 
-The main idea of the register-oriented compiler is to directly manipulate expressions inside registers, and only store and load them into memory when done. Each expression returns a register number to the yacc action above it.
+The main idea of the register-oriented compiler is to directly manipulate expressions inside registers, and only store and load them into memory when done. The temporary symbol table becomes obsolete at this point. Each expression returns a register number to the yacc action above it.
 
 To manage this, the compiler keeps a small descriptor for each register:
 
@@ -193,8 +215,8 @@ To manage this, the compiler keeps a small descriptor for each register:
 
 #define REG_TMP 12
 #define REG_FIRST_GENERAL 1
-#define REG_LAST_GENERAL 11
-#define REG_NO_MEMORY -1
+#define REG_LAST_GENERAL 11 
+#define REG_NO_MEMORY -1 // constant for memory_address that means it's not liked to any memory
 
 typedef struct {
     int in_use;
@@ -203,9 +225,9 @@ typedef struct {
 } register_descriptor_t;
 ```
 
-The registers `r1` to `r11` are used for normal expression computations. The register `r12` is reserved as a scratch register for the compiler itself. For example, if the compiler needs a temporary register to compute an address before loading or storing a value, it can use `r12` without taking one of the expression registers.
+The registers `r1` to `r11` are used for normal expression computations. Registers like `r12` are reserved as a scratch register for the compiler itself. For example, `r12` is reserved if the compiler needs a temporary register to compute an address before loading or storing a value, this will be used later down the line for pointers and functions, as will the rest of the registers also be reserved for special values (stack pointer, etc...)
 
-At the start of code generation, all registers are reset, then `r12` is immediately reserved so the allocator never gives it to normal expressions:
+At the start of code generation, all registers are reset, then any special registers are reserved:
 
 ```c
 void registers_init() {
@@ -214,8 +236,7 @@ void registers_init() {
         registers[i].memory_address = REG_NO_MEMORY;
         registers[i].temporary = 0;
     }
-
-    reserve_register(REG_TMP);
+    // reserve special registers...
 }
 ```
 
@@ -299,29 +320,7 @@ let b = a;
 
 This can avoid reloading `a` from memory if the value of `a` is still known to be inside a register. However, this optimization is intentionally conservative. After branches, loops, and block exits, the compiler resets its register knowledge because memory may have changed through another path.
 
-There are two important kinds of values in registers. A register can contain a clean copy of a variable from memory, or it can contain a temporary result. For instance:
-
-```c
-let b = a + 1;
-```
-
-If `a` was in `r1`, the compiler may generate:
-
-```
-AFC r2 0x1
-ADD r1 r1 r2
-```
-
-After this, `r1` no longer contains `a`; it contains `a + 1`. The register is therefore marked as a temporary result. This is simple, but it also means the compiler may reload `a` later even if a smarter allocator could have kept `a` in another register.
-
-For global variables, the address is known at compile time, so the compiler can use `LOAD` and `STR` directly:
-
-```
-LOAD r1 @0
-STR @1 r1
-```
-
-Local variables are explained later in the Functions section, because they require the stack pointer, frame pointer, and function stack frames.
+It is important to note that this reset is only a compiler reset. It does not emit instructions to clear the real CPU registers. It only clears the compiler's internal knowledge of what each register contains, so that future code generation reloads values from memory when needed.
 
 ### Homogenizing the instruction set
 
@@ -351,7 +350,7 @@ BOR     Ri    Rj    Rk    ; Ri = Rj | Rk
 LOAD    Ri    @j    _     ; Ri = MEM[@j]
 STR     @i    Rj    _     ; MEM[@i] = Rj
 LDI     Ri    Rj    _     ; Ri = MEM[Rj]
-STI     Ri    Rj    _     ; MEM[Ri] = Rj
+STI     _     Ri    Rj    ; MEM[Ri] = Rj
 
 J       _     addr  _     ; PC = addr
 JF      _     Ri    addr  ; if Ri == 0, PC = addr
@@ -375,7 +374,7 @@ These two instructions were needed for manipulating pointers, without them, we c
 
 Their flow in the CPU pipeline is very similar to `STR` and `LOAD`, instead of passing the value directly into the data memory, we pass `B` (or `C`) through the register bank in order to retreive its value before storing or loading.
 
-These two instructions count as a read/write for the purposes of the hazard managing unit.
+These two instructions count as a read/write for the purposes of the managing hazards.
 
 #### JI
 
@@ -412,7 +411,7 @@ main {
 
 Here, `&a` does not load the value of `a`. It computes the memory address where `a` is stored.
 
-For a global variable, this address is directly known by the compiler. If `a` is stored at address `0`, then `&a` can be generated with:
+This address is directly known by the compiler. If `a` is stored at address `0`, then `&a` can be generated with:
 
 ```
 AFC r1 0x0
@@ -455,7 +454,7 @@ a * b
 *p
 ```
 
-Yacc normally gives a rule the precedence of its last terminal symbol, but here the same token has two different meanings. Multiplication should behave like a binary operator, while dereference should behave like a unary operator with higher priority. We solved this with `%prec`:
+Yacc normally gives a rule the precedence of its last terminal symbol, but here the same token has two different meanings. Multiplication should behave like a binary operator, while dereference should behave like a unary operator with higher priority. We discovered that we can solve this with the `%prec` token:
 
 ```yacc
 tTIMES Expression %prec tDEREF
@@ -482,23 +481,58 @@ At first, function calls only needed two special registers: `ra` for the return 
 At this point, the full set of reserved registers becomes useful:
 
 ```c
-#define REG_RETURN 0
-#define REG_TMP 12
-#define REG_SP 13
-#define REG_FP 14
-#define REG_RA 15
+#define REG_RETURN 0 // return value
+#define REG_TMP 12 // temporary scratch register
+#define REG_SP 13 // stack pointer
+#define REG_FP 14 // frame pointer
+#define REG_RA 15 // return address
 ```
 
 `r0` is reserved for function return values, `r12` remains the compiler scratch register, `sp` points to the current top of the stack, `fp` points to the base of the current function frame, and `ra` stores the return address of the current call.
 
-The stack starts at the top of memory and grows downward. At the beginning of a function, the compiler adds a prefix:
+At this point, we changed how the symbol table worked. The variables no longer have a static slot on the symbol table, but rather an offset from the frame pointer.
+
+```c
+typedef struct {
+    char* name;
+    symbol_storage_t storage;
+    int address;
+    int offset;
+} symbol_t;
+
+typedef struct {
+
+    symbol_t table[256];
+    int symbol_size;
+    int next_global_address;
+    int temp_symbol_size; // used in old memory-oriented compiler
+
+} symbol_table_t;
+```
+But this is for variables declared inside a function body. We added the option to declare variables in the top section of the programs, counting as global variables, which are stored in the beginning of our symbol table.
+The local ones are saved as offset from the frame pointer (stack), which starts at the top of memory and grows downward.
+
+We defined two types of storage for variables:
+
+```c
+typedef enum {
+    SYMBOL_GLOBAL,
+    SYMBOL_LOCAL
+} symbol_storage_t;
+```
+
+When leaving a block, the compiler restores the `SYMBOL_LOCAL` symbol table to the size it had when entering the block, so variables declared inside that block are not visible outside it.
+
+For stack frames, the same idea is also applied to local stack slots. When entering a block, the compiler remembers the current `next_local_offset` in `local_offset_base`. When leaving the block, it pops the local variables declared inside that block from the stack, restores the symbol table to `symbol_table_base`, and restores `next_local_offset` to `local_offset_base`. This keeps block-local variables scoped correctly and avoids keeping unused stack slots alive after the block ends.
+
+At the beginning of a function, the compiler adds a prefix:
 
 ```
-STI sp ra   ; save return address
+STI sp ra   ; push return address to stack
 SUB sp sp 1 ; move stack pointer down
-STI sp fp   ; save old frame pointer
+STI sp fp   ; push old frame pointer to stack
 SUB sp sp 1 ; move stack pointer down
-COP fp sp   ; create the new frame
+COP fp sp   ; start the new frame
 ```
 
 In the real assembly, the `1` is loaded into `r12` first, but the idea is the same. After this prefix, the function has its own `fp`, and local variables can be addressed as `fp - offset`.
@@ -514,12 +548,12 @@ the caller computes each argument into a register, pushes the argument values, s
 ```
 AFC r1 0x2
 AFC r2 0x3
-STI sp r1
+STI sp r1    ; push first argument
 SUB sp sp 1
-STI sp r2
+STI sp r2    ; push second argument
 SUB sp sp 1
-AFC ra return_address
-J add
+AFC ra return_address ; set return address
+J add ; call method
 ```
 
 When the function starts, the arguments are below the saved `ra` and `fp`. The compiler copies them into normal local variable slots. This means parameters can be treated exactly like local variables inside the function body:
@@ -530,22 +564,13 @@ function add(a, b) {
 }
 ```
 
-Inside the function, `a` and `b` are stored in the symbol table as local symbols with offsets from `fp`. The symbol table now distinguishes between global and local variables:
-
-```c
-typedef enum {
-    SYMBOL_GLOBAL,
-    SYMBOL_LOCAL
-} symbol_storage_t;
-```
-
-A global variable gets a fixed address. A local variable gets an offset from the frame pointer. When leaving a block, the compiler restores the symbol table to the size it had when entering the block, so variables declared inside that block are not visible outside it.
+Inside the function, `a` and `b` are stored in the symbol table as local symbols with offsets from `fp`.
 
 At the end of a function, the compiler adds a suffix:
 
 ```
 COP sp fp   ; discard local variables
-ADD sp sp 1 ; go back to saved fp
+ADD sp sp 1 ; go back to saved fp which was at fp + 1
 LDI fp sp   ; restore old fp
 ADD sp sp 1 ; go back to saved ra
 LDI ra sp   ; restore return address
@@ -559,6 +584,8 @@ COP r0 r1
 ```
 
 where `r1` is the register containing the expression returned by the function.
+
+At the end of every function, the compiler also adds a fallback return. This fallback sets `r0` to `0` and emits the normal function suffix. If the function already executed an explicit `return`, this fallback code is not reached because the explicit return already jumps back to the caller. If execution reaches the end of the function without a return statement, the function therefore behaves like `return 0;`.
 
 Function calls can also be nested:
 
@@ -707,28 +734,24 @@ main {
 }
 ```
 
-Global variables are declared first. Functions are defined after the global declarations and before `main`. The `main` block is the entry point of the program. When the compiler starts generating code, it first emits a jump over all function definitions so that execution starts directly at `main`.
-
-Inside functions and inside `main`, variables declared with `let` are local. They are stored on the stack and addressed relative to `fp`. Global variables stay at fixed addresses in memory.
+Global variables are declared first. Functions are defined after the global declarations and before `main`. The `main` block is the entry point of the program. When the compiler starts generating code, it first emits code to initialize all global variables, then a jump instruction that jumps over all functions directly to the entrypoint `main`.
 
 ### Discussion & Limitations
 
 The project is intentionally small, so several limitations remain.
 
-There is no type system. All values are treated as machine words, so integers, booleans, and pointers are represented in the same way. This keeps the compiler simple, but it also means there is no type checking for expressions such as dereferencing a value that is not really a pointer.
+- There is no type system. All values are treated as machine words, so integers, booleans, and pointers are represented in the same way. This keeps the compiler simple, but it also means there is no type checking for expressions such as dereferencing a value that is not really a pointer.
 
-The register allocator is simple. Binary operations reuse the left operand register as the destination. This produces compact code, but it can overwrite a clean cached variable value and force the compiler to reload that variable later. The allocator also does not perform liveness analysis, so it does not know precisely when a variable will be needed again.
+- The register allocator is simple. Binary operations reuse the left operand register as the destination. This produces compact code, but it can overwrite a clean cached variable value and force the compiler to reload that variable later. The allocator also does not perform liveness analysis, so it does not know precisely when a variable will be needed again.
 
-The compiler resets its register knowledge after branches, loops, function calls, and block exits. This is safe, because memory becomes the source of truth again, but it misses possible optimizations.
+- Function arguments are limited by `MAX_FUNCTION_PARAMETERS`, and nested function calls are limited by `MAX_CALL_DEPTH`. These limits are fixed-size arrays in the compiler implementation.
 
-Function arguments are limited by `MAX_FUNCTION_PARAMETERS`, and nested function calls are limited by `MAX_CALL_DEPTH`. These limits are fixed-size arrays in the compiler implementation.
+- There are no arrays or structures. Pointers can address memory cells, but there is no syntax for indexing an array or declaring aggregate data.
 
-There are no arrays or structures. Pointers can address memory cells, but there is no syntax for indexing an array or declaring aggregate data.
+- There is no heap allocation. All local variables are stored on the stack, and global variables are stored at fixed addresses.
 
-There is no heap allocation. All local variables are stored on the stack, and global variables are stored at fixed addresses.
+- There is no `break` or `continue` in loops, and there is no `for` loop. Iteration is done with `while`.
 
-There is no `break` or `continue` in loops, and there is no `for` loop. Iteration is done with `while`.
+- There is no unary minus. Negative values can still appear as results of subtraction, but there is no direct syntax such as `-1` in the grammar.
 
-There is no unary minus. Negative values can still appear as results of subtraction, but there is no direct syntax such as `-1` in the grammar.
-
-Finally, the compiler performs very little error recovery. Most errors are reported as syntax errors or simple semantic errors such as an unknown variable or an unknown function.
+- Finally, the compiler performs very little error recovery. Most errors are reported as syntax errors or simple semantic errors such as an unknown variable or an unknown function.

@@ -42,3 +42,75 @@ JI ra       ; jump back to caller
 At the end of a function, the compiler adds a suffix to restore the caller state. It first copies `fp` back into `sp`, which discards the current function's local variables. Then it increments `sp` and reloads the old `fp` from memory. It increments `sp` again and reloads the saved return address into `ra`. Finally, it jumps indirectly to `ra`, returning execution to the caller.
 
 %prec is used in the yacc grammar to manually assign a precedence to a rule. By default, yacc gives a rule the precedence of its last terminal symbol, but this is not always enough when the same token has different meanings. In our grammar, * can mean multiplication or pointer dereference. Multiplication uses the normal tTIMES precedence, while dereference should behave like a unary operator with higher priority. For this reason, the dereference rule is written as tTIMES Expression %prec tDEREF, which tells yacc to use the precedence of the artificial token tDEREF instead of treating it like multiplication. This avoids ambiguity in expressions such as *p + 1 or *p * x.
+
+Synchronous instruction ROM and stalls:
+
+The instruction ROM is synchronous, so its output does not change immediately when `pc` changes. The instruction visible on `instruction_line` belongs to the address requested on the previous clock edge. This matters during stalls. If the CPU only freezes `pc` and `LI/DI`, the ROM output can still contain a useful instruction that arrived during the stall. Without saving it, that instruction can be skipped, or the stall can end one cycle too early.
+
+The fix is to save the whole 32-bit `instruction_line` when a stall starts:
+
+```
+signal instr_saved    : std_logic_vector(31 downto 0) := (others => '0');
+signal has_saved      : std_logic := '0';
+signal instr_selected : std_logic_vector(31 downto 0);
+```
+
+The decode stage should read from `instr_selected`, not directly from `instruction_line`:
+
+```
+instr_selected <= instr_saved when has_saved = '1' else instruction_line;
+
+op_li <= instr_selected(31 downto 24);
+a_li  <= instr_selected(23 downto 16);
+b_li  <= instr_selected(15 downto 8);
+c_li  <= instr_selected(7 downto 0);
+```
+
+Inside the main clocked pipeline process, when `stall = '1'`, save the instruction once, freeze `pc`, keep `LI/DI`, and inject a `NOP` bubble into `DI/EX`:
+
+```
+if stall = '1' then
+    if has_saved = '0' then
+        instr_saved <= instruction_line;
+        has_saved <= '1';
+    end if;
+
+    pc <= pc;
+
+    op_lidi <= op_lidi;
+    a_lidi  <= a_lidi;
+    b_lidi  <= b_lidi;
+    c_lidi  <= c_lidi;
+
+    op_diex <= OP_NOP;
+    a_diex  <= (others => '0');
+    b_diex  <= (others => '0');
+    c_diex  <= (others => '0');
+```
+
+When the stall ends, consume the saved instruction before advancing the fetch again:
+
+```
+if has_saved = '1' then
+    pc <= pc;
+    has_saved <= '0';
+else
+    pc <= std_logic_vector(unsigned(pc) + 1);
+end if;
+
+op_lidi <= op_li;
+a_lidi  <= a_li;
+b_lidi  <= b_li;
+c_lidi  <= c_li;
+```
+
+With this behavior, a stall does this:
+
+```
+PC      frozen
+LI      saved if needed
+LI/DI   frozen
+DI/EX   NOP bubble
+EX/MEM  continues
+MEM/ER  continues
+```

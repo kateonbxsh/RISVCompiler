@@ -24,7 +24,7 @@ typedef enum {
     OP_LOAD   = 0x0D,  // Ri = MEM[@j]
     OP_STORE  = 0x0E,  // MEM[@i] = Rj
     OP_LOADR  = 0x0F,  // Ri = MEM[Rj]
-    OP_STORER = 0x10,  // MEM[Ri] = Rj
+    OP_STORER = 0x10,  // MEM[Ri] = Rj, encoded as OP 00 Ri Rj
 
     OP_JMP  = 0x11,    // PC = addr
     OP_JMF  = 0x12,    // if Ri == 0, PC = addr

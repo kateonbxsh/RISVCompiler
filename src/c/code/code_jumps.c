@@ -19,12 +19,12 @@ instruction_t* code_add_jump_placeholder() {
 
 // patch a conditional jump once we know how far it should jump
 void patch_jmf_relative(instruction_t* jmf, long offset) {
-    jmf->arguments[1] = arg_value(offset);
+    jmf->arguments[2] = arg_value(offset);
     code_reset_registers();
 }
 
 // patch an unconditional jump once we know how far it should jump
 void patch_jmp_relative(instruction_t* jmp, long offset) {
-    jmp->arguments[0] = arg_value(offset);
+    jmp->arguments[1] = arg_value(offset);
     code_reset_registers();
 }
